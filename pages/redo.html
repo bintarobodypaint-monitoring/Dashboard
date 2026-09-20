@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>REDO — DIGITAL MONITORING SYSTEM</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/portal.css">
+<script src="../js/auth.js?v=3"></script>
+
+</head>
+<body data-version="3" data-module="redo">
+<script>if(!DMSAuth.requireLogin()) document.documentElement.style.display="none";</script>
+<div id="liveLogToastWrap" class="live-log-toast-wrap"></div>
+<button id="tvModeButton" class="tv-mode-button" onclick="toggleTVMode()">📺 TV MODE</button>
+<div id="wakeLockIndicator" class="wake-lock-indicator"><span></span><b id="wakeLockText">LAYAR AKTIF</b></div>
+<header><header class="header">
+<div class="tunas-logo">
+<div>
+<img alt="Tunas Toyota" class="tunas-real-logo" referrerpolicy="no-referrer" src="../assets/tunas-toyota.png">
+<div class="tunas-sub">BINTARO BODY &amp; PAINT</div>
+</img></div>
+</div>
+<div class="title">TRACKING &amp; PERFORMANCE BOARD</div>
+<div class="toyota-logo">
+<img alt="Toyota Let's Go Beyond" class="toyota-real-logo" referrerpolicy="no-referrer" src="../assets/toyota-logo.png"/>
+</div>
+</header></header>
+<div class="module-shell-bar"><a class="module-back" href="../index.html">← KEMBALI KE DASHBOARD</a><div class="module-name">REDO</div><button class="module-logout" type="button" onclick="DMSAuth.logout();location.replace('../index.html')">LOGOUT</button></div>
+<div class="loading-line"></div>
+<main class="content module-page">
+<section class="page" id="redo">
+<div class="redo-module redo-v6">
+<div class="redo-toolbar">
+<div class="redo-title">
+<h2>REDO MONITORING</h2>
+<div class="redo-sub" id="redoSubtitle">Rekap kualitas REDO • Painting &amp; Final Inspection</div>
+</div>
+<div class="redo-actions">
+<button class="redo-btn active" id="redoModeMTD" onclick="REDOMonitor.setMode('MTD')" type="button">MTD</button>
+<button class="redo-btn" id="redoModeYTD" onclick="REDOMonitor.setMode('YTD')" type="button">YTD</button>
+<select aria-label="Pilih bulan" class="redo-month-select" id="redoMonthSelect" onchange="REDOMonitor.setMonth(this.value)"></select>
+<button class="redo-btn" id="redoGroupAll" onclick="REDOMonitor.setGroup('ALL')" type="button">ALL</button>
+<button class="redo-btn" id="redoGroup1" onclick="REDOMonitor.setGroup('ATU 1')" type="button">ATU 1</button>
+<button class="redo-btn" id="redoGroup2" onclick="REDOMonitor.setGroup('ATU 2')" type="button">ATU 2</button>
+<button class="redo-btn" onclick="REDOMonitor.load(true)" type="button">↻ REFRESH</button>
+<button class="redo-btn download" onclick="REDOMonitor.downloadPDF()" type="button">⬇ DOWNLOAD PDF</button>
+</div>
+</div>
+<div class="redo-kpis" id="redoKpis">
+<div class="redo-kpi red"><span>TOTAL DEFECT TERCATAT</span><strong id="redoKpiDefectTotal">0</strong><small>defect tercatat pada periode terpilih</small></div>
+<div class="redo-kpi red"><span>REDO UNIT</span><strong id="redoKpiUnit">0</strong><small id="redoKpiUnitSub">periode terpilih</small></div>
+<div class="redo-kpi red"><span>PANEL REDO</span><strong id="redoKpiPanel">0</strong><small id="redoKpiPanelSub">periode terpilih</small></div>
+<div class="redo-kpi"><span>% REDO DARI UNIT KELUAR</span><strong id="redoKpiUnitPct">0.0%</strong><small>unit redo ÷ unit selesai</small></div>
+<div class="redo-kpi"><span>% PANEL REDO DARI PANEL KELUAR</span><strong id="redoKpiPanelPct">0.0%</strong><small>panel redo ÷ panel selesai</small></div>
+<div class="redo-kpi red"><span>REDO PAINTING</span><strong id="redoKpiPaint">0</strong><small id="redoKpiPaintPct">0.0% dari defect</small></div>
+<div class="redo-kpi red"><span>REDO FINAL INSPECTION</span><strong id="redoKpiFI">0</strong><small id="redoKpiFIPct">0.0% dari defect</small></div>
+</div>
+<div class="redo-ytd-trend-card" id="redoYtdTrendCard">
+<div class="redo-card-head"><strong>JUMLAH REDO PER BULAN — YTD</strong><span>Batang = jumlah unit REDO • Garis putus-putus = TARGET &lt; 9% dari unit selesai</span></div>
+<div class="redo-ytd-trend-wrap"><div id="redoYtdTrendHost"></div></div>
+</div>
+<div class="redo-table-card redo-table-card-v6">
+<div class="redo-card-head"><strong id="redoPaintingTableTitle">REKAP REDO PAINTING — MTD <span class="redo-target">TARGET &lt; 9%</span></strong><span>Unit &amp; panel per hari</span></div>
+<div class="redo-scroll" id="redoPaintingTableHost"><div class="redo-loading">Memuat data REDO...</div></div>
+</div>
+<div class="redo-table-card redo-table-card-v6">
+<div class="redo-card-head"><strong id="redoFiTableTitle">REKAP REDO FINAL INSPECTION (FI) — MTD <span class="redo-target">TARGET &lt; 5%</span></strong><span>Unit &amp; panel per hari</span></div>
+<div class="redo-scroll" id="redoFiTableHost"><div class="redo-loading">Memuat data REDO...</div></div>
+</div>
+<div class="redo-analysis-grid redo-pareto-vertical">
+<div class="redo-pareto-card redo-pareto-side">
+<div class="redo-card-head"><strong id="redoParetoPaintingTitle">PARETO TOP 10 DEFECT PREPARATION + PAINTING — MTD</strong><span>Preparation + Painting digabung</span></div>
+<div class="redo-pareto-wrap"><div class="redo-pareto" id="redoParetoPainting"></div></div>
+</div>
+<div class="redo-pareto-card redo-pareto-side">
+<div class="redo-card-head"><strong id="redoParetoFITitle">PARETO TOP 10 DEFECT FINAL INSPECTION (FI) — MTD</strong><span>Khusus Final Inspection</span></div>
+<div class="redo-pareto-wrap"><div class="redo-pareto" id="redoParetoFI"></div></div>
+</div>
+</div>
+<div class="redo-process-card">
+<div class="redo-card-head"><strong>REKAP PROSES DEFECT</strong><span>Top 3 defect per proses • jumlah &amp; persentase</span></div>
+<div class="redo-process-matrix" id="redoProcessMatrix"></div>
+</div>
+</div>
+</section>
+</main>
+<div class="modal" id="unitModal" onclick="closeModal(event)">
+<div class="modal-card jpcb-detail-modal" onclick="event.stopPropagation()">
+<div class="modal-head"><div><h3 id="modalTitle">DETAIL UNIT</h3><div class="modal-sub" id="modalSub">Detail unit &amp; histori</div></div><button class="close" onclick="closeModal()">×</button></div>
+<div class="modal-body" id="modalDetailBody"><div class="search-empty"><strong>Memuat detail...</strong></div></div>
+</div>
+</div>
+
+<script>
+window.__MODULE_PAGE__ = document.body.dataset.module || '';
+</script>
+
+<script src="../js/config.js"></script>
+
+<script src="../js/wake-lock.js"></script>
+<script src="../js/tv-mode.js"></script>
+<script>
+window.REDOMonitor = undefined;
+</script>
+<script src="../js/redo.js"></script>
+<script>
+window.addEventListener('load',function(){ if(window.REDOMonitor) REDOMonitor.init(); });
+</script>
+
+</body>
+</html>
