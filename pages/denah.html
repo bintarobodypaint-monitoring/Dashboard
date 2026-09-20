@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>DENAH BENGKEL — DIGITAL MONITORING SYSTEM</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/portal.css">
+<script src="../js/auth.js?v=3"></script>
+<style>
+.denah-live-page{padding:10px!important}
+.denah-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.denah-head h2{margin:0;font-size:clamp(18px,2vw,28px);color:#26343e}
+.denah-meta{display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.denah-chip{background:#182a38;color:#fff;border-radius:8px;padding:7px 10px;font-size:10px;font-weight:950}
+.denah-chip.live{background:#0f8f5d}
+.denah-tools{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+.denah-tools button{border:1px solid #d3dbe1;background:#fff;border-radius:7px;padding:7px 11px;font-weight:950;cursor:pointer;color:#26343e}
+.denah-tools button:hover{border-color:#c9000a;color:#c9000a}
+.denah-viewport{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid #dfe4e8;border-radius:10px;background:#eef1f3;max-height:calc(100vh - 175px)}
+.denah-stage{position:relative;width:100%;min-width:900px;transform-origin:top left;transform:scale(var(--denah-zoom,1));margin-bottom:calc((var(--denah-zoom,1) - 1)*-100%);background:#fff}
+.denah-stage img{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none}
+.denah-car{position:absolute;z-index:5;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;cursor:pointer;filter:drop-shadow(0 3px 4px rgba(0,0,0,.28))}
+.car-shape{font-size:clamp(22px,2.3vw,38px);line-height:1;animation:carPulse 1.5s ease-in-out infinite}
+.car-label{margin-top:2px;background:#fff;border:2px solid #d71920;border-radius:6px;padding:3px 5px;min-width:80px;max-width:125px;text-align:center;box-shadow:0 3px 8px rgba(0,0,0,.18);font-size:8px;line-height:1.2}
+.car-label b{display:block;color:#c9000a;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.car-label span{display:block;color:#273742;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.car-label small{display:block;color:#6b7880;font-size:7px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@keyframes carPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+.denah-note{margin-top:8px;color:#6d7880;font-size:10px;line-height:1.5}
+.denah-legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:7px}.denah-legend span{font-size:10px;font-weight:800;color:#52616b}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#d71920;margin-right:4px}.dot.gray{background:#9ba5ab}
+@media(max-width:700px){
+ .denah-live-page{padding:8px!important}.denah-head{display:block}.denah-meta{justify-content:flex-start;margin-top:8px}.denah-viewport{max-height:calc(100vh - 205px)}.denah-stage{min-width:1050px}.denah-tools{position:sticky;left:0}.car-label{font-size:7px}.car-label b{font-size:8px}
+}
+</style>
+</head>
+<body data-module="denah">
+<script>if(!DMSAuth.requireLogin())document.documentElement.style.display="none";</script>
+<div class="module-shell-bar"><a class="module-back" href="../index.html">← KEMBALI KE DASHBOARD</a><div class="module-name">DENAH BENGKEL</div><button class="module-logout" type="button" onclick="DMSAuth.logout();location.replace('../index.html?login=1')">LOGOUT</button></div>
+<main class="content module-page">
+<section class="page active denah-live-page">
+<div class="box" style="padding:12px">
+  <div class="denah-head">
+    <div><h2>DENAH BODY REPAIR TUNAS TOYOTA BINTARO</h2><div class="denah-note">Denah menggunakan layout PDF <b>LAYOUT BINTARO BODY &amp; PAINT</b>. Mobil di atas denah merupakan indikator visual dari DATABASE UNIT berdasarkan PROGRESS.</div></div>
+    <div class="denah-meta"><span class="denah-chip">WIP <b id="denahWip">0</b></span><span class="denah-chip">STALL TERISI <b id="denahOccupied">0</b></span><span id="denahStatus" class="denah-chip live">● LIVE</span></div>
+  </div>
+  <div class="denah-tools"><button type="button" onclick="denahZoom(-.15)">−</button><span id="denahZoomLabel" class="denah-chip">100%</span><button type="button" onclick="denahZoom(.15)">+</button><button type="button" onclick="denahResetZoom()">RESET</button></div>
+  <div class="denah-viewport"><div id="denahStage" class="denah-stage" style="--denah-zoom:1"><img src="../assets/denah-body-repair-tunas-toyota-bintaro.png" alt="LAYOUT BINTARO BODY & PAINT"></div></div>
+  <div class="denah-legend"><span><i class="dot"></i>Mobil = unit WIP aktif</span><span><i class="dot gray"></i>Posisi stall adalah pemetaan visual berdasarkan PROGRESS, bukan kolom STALL aktual</span></div>
+</div>
+</section>
+</main>
+<script src="../js/config.js"></script>
+<script src="../js/jpcb-core.js"></script>
+<script src="../js/denah.js?v=20260921-denah-live"></script>
+</body></html>
