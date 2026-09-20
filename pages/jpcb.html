@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JPCB — DIGITAL MONITORING SYSTEM</title>
+<link rel="stylesheet" href="../css/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body data-module="jpcb">
+<div id="jpcbLoginOverlay">
+  <div class="jpcb-login-card">
+    <img class="jpcb-login-logo" src="../assets/login-logo.png" alt="Tunas Toyota">
+    <div class="jpcb-login-brand">TUNAS TOYOTA</div>
+    <div class="jpcb-login-sub">BODY &amp; PAINT BINTARO</div>
+    <div class="jpcb-login-title">DIGITAL MONITORING SYSTEM</div>
+    <form id="jpcbLoginForm">
+      <label>USERNAME</label><input id="jpcbUsername" autocomplete="username">
+      <label>PASSWORD</label><input id="jpcbPassword" type="password" autocomplete="current-password">
+      <button class="jpcb-login-btn" type="submit">LOGIN</button>
+      <div class="jpcb-login-error" id="jpcbLoginError"></div>
+    </form>
+    <div class="jpcb-login-note">Internal Workshop Monitoring</div>
+  </div>
+</div>
+<div id="liveLogToastWrap" class="live-log-toast-wrap"></div>
+<button id="tvModeButton" class="tv-mode-button" onclick="toggleTVMode()">📺 TV MODE</button>
+<div id="wakeLockIndicator" class="wake-lock-indicator"><span></span><b id="wakeLockText">LAYAR AKTIF</b></div>
+<header><header class="header">
+<div class="tunas-logo">
+<div>
+<img alt="Tunas Toyota" class="tunas-real-logo" referrerpolicy="no-referrer" src="../assets/tunas-toyota.png">
+<div class="tunas-sub">BINTARO BODY &amp; PAINT</div>
+</img></div>
+</div>
+<div class="title">TRACKING &amp; PERFORMANCE BOARD</div>
+<div class="toyota-logo">
+<img alt="Toyota Let's Go Beyond" class="toyota-real-logo" referrerpolicy="no-referrer" src="../assets/toyota-logo.png"/>
+</div>
+</header></header>
+<div class="navbar modular-navbar">
+      <nav class="nav"><a class="site-nav-link " href="index.html">← DASHBOARD</a><a class="site-nav-link active" href="jpcb.html">JPCB</a><a class="site-nav-link " href="overdue.html">⚠ UNIT TERLAMBAT</a><a class="site-nav-link " href="unit-inap.html">🛏 UNIT INAP</a><a class="site-nav-link " href="redo.html">↻ REDO</a><a class="site-nav-link " href="qc-report.html">✓ QC REPORT</a><a class="site-nav-link " href="jscb.html">JSCB</a><a class="site-nav-link " href="performance.html">PERFORMANCE</a><a class="site-nav-link " href="daily-report.html">DAILY REPORT</a><a class="site-nav-link " href="denah.html">DENAH</a></nav>
+      <div class="clock"><div class="clock-wrap"><div class="clock-time" id="clockTime">00:00:00</div><div class="clock-date" id="clockDate">-</div></div></div>
+      <div class="slide-area"><button class="global-slide-btn" id="globalSlideBtn" onclick="window.toggleGlobalSlideshow&&toggleGlobalSlideshow()">▶ SLIDE SHOW</button></div>
+    </div>
+<div class="loading-line"></div>
+<main class="content module-page">
+<section class="page active" id="jpcb">
+<div class="jpcb-head">
+<div class="jpcb-title-wrap">
+<h2>JPCB — LIVE PRODUCTION BOARD</h2>
+<div class="refresh">Data Google Sheets • Auto refresh 60 detik</div>
+<div class="api-status" style="margin-top:5px">
+<span class="api-dot" id="jpcbApiDot"></span><span id="jpcbApiStatus">Menghubungkan...</span>
+</div>
+</div>
+<div class="jpcb-search" style="margin:0;padding:8px;background:#101c27">
+<input autocomplete="off" id="jpcbSearchInput" inputmode="text" maxlength="30" placeholder="CARI NO. POLISI / NO. WO 8 DIGIT..." type="text">
+<button class="primary-btn" onclick="findJPCBUnit(document.getElementById('jpcbSearchInput').value)" type="button">CARI</button>
+<div class="jpcb-search-status" id="jpcbSearchStatus">Siap mencari</div>
+</input></div>
+<div class="jpcb-head-right">
+<div class="wip-summary" id="jpcbWipSummary">
+<div class="wip-box wip-total-box">
+<span>TOTAL</span>
+<strong id="jpcbWipCount">0</strong>
+<small>UNIT WIP</small>
+</div>
+</div>
+</div>
+</div>
+<div class="jpcb-slide-bar" id="jpcbSlideBar"></div>
+<div class="board" id="jpcbBoard"><div class="empty">Mengambil data JPCB dari Google Sheets...</div></div>
+<div class="jpcb-bottom-status" id="jpcbBottomStatus">
+<div class="status-panel">
+<div class="status-head"><span>ESTIMASI</span><strong id="jpcbEstimasiCount">0</strong></div>
+<div class="status-list" id="jpcbEstimasiList"><div class="status-empty">Tidak ada unit</div></div>
+</div>
+<div class="status-panel">
+<div class="status-head"><span>WAITING SPK</span><strong id="jpcbWaitingSpkCount">0</strong></div>
+<div class="status-list" id="jpcbWaitingSpkList"><div class="status-empty">Tidak ada unit</div></div>
+</div>
+<div class="status-panel">
+<div class="status-head"><span>JOB STOPPED</span><strong id="jpcbStoppedCount">0</strong></div>
+<div class="status-list" id="jpcbStoppedList"><div class="status-empty">Tidak ada unit</div></div>
+</div>
+<div class="status-panel">
+<div class="status-head"><span>RAWAT JALAN</span><strong id="jpcbRawatCount">0</strong></div>
+<div class="status-list" id="jpcbRawatList"><div class="status-empty">Tidak ada unit</div></div>
+</div>
+</div>
+
+<div class="box jpcb-summary-box" style="margin-top:10px">
+<h3 style="margin-bottom:8px">Ringkasan JPCB</h3>
+<table>
+<thead><tr><th>Proses</th><th>Actual</th></tr></thead>
+<tbody id="jpcbSummary"><tr><td class="empty" colspan="2">Menunggu data...</td></tr></tbody>
+</table>
+</div>
+</section>
+</main>
+<div class="modal" id="unitModal" onclick="closeModal(event)">
+<div class="modal-card jpcb-detail-modal" onclick="event.stopPropagation()">
+<div class="modal-head"><div><h3 id="modalTitle">DETAIL UNIT</h3><div class="modal-sub" id="modalSub">Detail unit &amp; histori</div></div><button class="close" onclick="closeModal()">×</button></div>
+<div class="modal-body" id="modalDetailBody"><div class="search-empty"><strong>Memuat detail...</strong></div></div>
+</div>
+</div>
+
+<script>
+window.__MODULE_PAGE__ = document.body.dataset.module || '';
+</script>
+
+<script src="../js/config.js"></script>
+<script>
+(function(){
+  const USER='bpbintaro';
+  const PASS='jpcb@2026';
+  const KEY='jpcb_authenticated_session';
+  const overlay=document.getElementById('jpcbLoginOverlay');
+  const form=document.getElementById('jpcbLoginForm');
+  const user=document.getElementById('jpcbUsername');
+  const pass=document.getElementById('jpcbPassword');
+  const err=document.getElementById('jpcbLoginError');
+  function lock(){document.body.classList.add('jpcb-locked');overlay.style.display='flex';setTimeout(()=>user.focus(),50);}
+  function unlock(){document.body.classList.remove('jpcb-locked');overlay.style.display='none';}
+  let ok=false; try{ok=sessionStorage.getItem(KEY)==='1'}catch(e){}
+  if(ok) unlock(); else lock();
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    if(user.value.trim().toLowerCase()===USER && pass.value===PASS){
+      try{sessionStorage.setItem(KEY,'1')}catch(e){}
+      err.textContent=''; pass.value=''; unlock();
+    }else{
+      err.textContent='Username atau password salah.'; pass.value=''; pass.focus();
+    }
+  });
+  window.jpcbLogout=function(){try{sessionStorage.removeItem(KEY)}catch(e){} lock();};
+  // Saat halaman/tab ditutup, hapus session login.
+  window.addEventListener('pagehide',function(){try{sessionStorage.removeItem(KEY)}catch(e){}});
+})();
+</script>
+
+<script src="../js/common-audio.js"></script>
+<script src="../js/wake-lock.js"></script>
+<script src="../js/tv-mode.js"></script>
+<script src="../js/jpcb-search-ui.js"></script>
+<script src="../js/jpcb-core.js"></script>
+
+</body>
+</html>
