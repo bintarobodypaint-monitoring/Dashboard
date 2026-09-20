@@ -1,0 +1,44 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DIGITAL MONITORING SYSTEM — Tunas Toyota Bintaro</title><link rel="stylesheet" href="css/portal.css"><style>
+/* Dashboard menu — self contained so index.html does not need dashboard-menu.css */
+.dashboard-module{
+  position:relative;
+  border:2px solid #d71920 !important;
+  box-shadow:0 8px 24px rgba(215,25,32,.12) !important;
+}
+.dashboard-module::before{
+  content:'MENU 01';
+  position:absolute;
+  top:14px;
+  right:14px;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.08em;
+  color:#d71920;
+  background:#fff1f2;
+  padding:5px 8px;
+  border-radius:999px;
+}
+.dashboard-module .icon{
+  background:#d71920 !important;
+  color:#fff !important;
+}
+.dashboard-module h3{color:#1f2937}
+.dashboard-module .go{color:#d71920 !important;font-weight:800}
+</style><script src="js/auth.js"></script></head><body>
+<div class="dms-login-overlay" id="dmsLoginOverlay"><div class="dms-login-card"><img class="dms-login-logo" src="assets/login-logo.png" alt="Tunas Toyota"><div class="dms-login-brand">TUNAS TOYOTA</div><div class="dms-login-sub">BODY &amp; PAINT BINTARO</div><div class="dms-login-title">DIGITAL MONITORING SYSTEM</div><form id="dmsLoginForm"><label>USERNAME</label><input id="dmsUsername" autocomplete="username" required><label>PASSWORD</label><input id="dmsPassword" type="password" autocomplete="current-password" required><button class="dms-login-btn" type="submit">LOGIN</button><div class="dms-login-error" id="dmsLoginError"></div></form><div class="dms-login-note">Internal Workshop Monitoring • Session 12 jam</div></div></div>
+<header class="portal-header"><div class="portal-top"><div class="brand"><img src="assets/tunas-toyota.png" alt="Tunas Toyota"><div><div class="brand-title">DIGITAL MONITORING SYSTEM</div><div class="brand-sub">BODY &amp; PAINT — TUNAS TOYOTA BINTARO</div></div></div><div class="location">INTERNAL WORKSHOP<br><b>TUNAS TOYOTA BINTARO</b><br><button class="module-logout" id="dmsLogout">LOGOUT</button></div></div></header>
+<section class="portal-hero"><div><div class="eyebrow">BODY &amp; PAINT OPERATIONS</div><h1>Digital Monitoring<br>System</h1><p>Portal monitoring terintegrasi. Pilih satu modul untuk masuk ke layar kerja khusus modul tersebut.</p></div></section>
+<main class="portal-container"><div class="portal-section-head"><div><h2>Monitoring Modules</h2><p>Setiap modul mempunyai halaman sendiri agar ringan dan fokus.</p></div></div>
+<div class="portal-modules">
+<a class="module dashboard-module" href="pages/dashboard.html"><div class="icon">01</div><h3>DASHBOARD</h3><p>Management dashboard • KPI, grafik Unit In/Out, WIP, Overdue dan Leadtime.</p><div class="go">BUKA DASHBOARD →</div></a>
+<a class="module" href="pages/jpcb.html"><div class="icon">02</div><h3>LIVE MONITORING BOARD</h3><p>JPCB • progress unit, WIP, pencarian unit, detail dan log.</p><div class="go">BUKA JPCB →</div></a>
+<a class="module" href="pages/jscb.html"><div class="icon">03</div><h3>JSCB</h3><p>Job Schedule Control Board dan planning process.</p><div class="go">BUKA JSCB →</div></a>
+<a class="module" href="pages/performance.html"><div class="icon">04</div><h3>PERFORMANCE</h3><p>Performance unit entry per group dan Service Advisor.</p><div class="go">BUKA PERFORMANCE →</div></a>
+<a class="module" href="pages/qc-report.html"><div class="icon">05</div><h3>QC REPORT</h3><p>QC Panel Repair, Painting dan Final Inspection.</p><div class="go">BUKA QC REPORT →</div></a>
+<a class="module" href="pages/redo.html"><div class="icon">06</div><h3>REDO MONITORING</h3><p>Redo Painting, Final Inspection, defect dan Pareto.</p><div class="go">BUKA REDO →</div></a>
+<a class="module" href="pages/unit-inap.html"><div class="icon">07</div><h3>UNIT INAP</h3><p>Audit unit inap, PKB dan laporan.</p><div class="go">BUKA UNIT INAP →</div></a>
+<a class="module" href="pages/overdue.html"><div class="icon">08</div><h3>UNIT TERLAMBAT</h3><p>Monitoring unit melewati JANJI SELESAI.</p><div class="go">BUKA OVERDUE →</div></a>
+<a class="module" href="pages/daily-report.html"><div class="icon">09</div><h3>DAILY REPORT</h3><p>Generate Daily Dashboard Report dari engine JPCB.</p><div class="go">BUKA DAILY REPORT →</div></a>
+<a class="module" href="pages/denah.html"><div class="icon">10</div><h3>DENAH BENGKEL</h3><p>Denah Body Repair Tunas Toyota Bintaro.</p><div class="go">BUKA DENAH →</div></a>
+</div></main><footer class="portal-footer"><b>Tunas Toyota Bintaro</b> • Digital Monitoring System • Body &amp; Paint</footer>
+<script>(function(){const o=document.getElementById('dmsLoginOverlay'),f=document.getElementById('dmsLoginForm'),u=document.getElementById('dmsUsername'),p=document.getElementById('dmsPassword'),e=document.getElementById('dmsLoginError');function hide(){o.hidden=true;document.body.style.overflow=''}function show(){o.hidden=false;document.body.style.overflow='hidden';setTimeout(()=>u.focus(),50)}if(DMSAuth.isLoggedIn())hide();else show();f.addEventListener('submit',function(x){x.preventDefault();if(DMSAuth.login(u.value,p.value)){e.textContent='';p.value='';hide()}else{e.textContent='Username atau password salah.';p.value='';p.focus()}});document.getElementById('dmsLogout').onclick=function(){DMSAuth.logout();show()};})();</script></body></html>
