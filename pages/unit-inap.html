@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UNIT INAP — DIGITAL MONITORING SYSTEM</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/portal.css">
+<script src="../js/auth.js?v=3"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body data-version="3" data-module="unitinap">
+<script>if(!DMSAuth.requireLogin()) document.documentElement.style.display="none";</script>
+<div id="liveLogToastWrap" class="live-log-toast-wrap"></div>
+<button id="tvModeButton" class="tv-mode-button" onclick="toggleTVMode()">📺 TV MODE</button>
+<div id="wakeLockIndicator" class="wake-lock-indicator"><span></span><b id="wakeLockText">LAYAR AKTIF</b></div>
+<header><header class="header">
+<div class="tunas-logo">
+<div>
+<img alt="Tunas Toyota" class="tunas-real-logo" referrerpolicy="no-referrer" src="../assets/tunas-toyota.png">
+<div class="tunas-sub">BINTARO BODY &amp; PAINT</div>
+</img></div>
+</div>
+<div class="title">TRACKING &amp; PERFORMANCE BOARD</div>
+<div class="toyota-logo">
+<img alt="Toyota Let's Go Beyond" class="toyota-real-logo" referrerpolicy="no-referrer" src="../assets/toyota-logo.png"/>
+</div>
+</header></header>
+<div class="module-shell-bar"><a class="module-back" href="../index.html">← KEMBALI KE DASHBOARD</a><div class="module-name">UNIT INAP</div><button class="module-logout" type="button" onclick="DMSAuth.logout();location.replace('../index.html')">LOGOUT</button></div>
+<div class="loading-line"></div>
+<main class="content module-page">
+<section class="page unitinap-page" id="unitinap">
+<div class="unitinap-toolbar">
+<div class="unitinap-title">
+<h2>🛏 UNIT INAP</h2>
+<div class="unitinap-sub" id="unitInapSubtitle">Audit Unit Inap • menampilkan tanggal terbaru secara otomatis</div>
+</div>
+<div class="unitinap-datebox">
+<label>TANGGAL AUDIT<input id="unitInapDate" onchange="loadUnitInap(this.value)" type="date"/></label>
+<button class="unitinap-btn" onclick="loadUnitInap(document.getElementById('unitInapDate').value)" type="button">TAMPILKAN</button>
+<button class="unitinap-btn secondary" onclick="loadUnitInap('')" type="button">TERBARU</button>
+<button class="unitinap-btn" onclick="downloadUnitInapPDF()" type="button">⬇ DOWNLOAD PDF</button>
+<button class="unitinap-btn" onclick="downloadUnitInapExcel()" type="button">⬇ DOWNLOAD EXCEL</button>
+<button class="unitinap-btn daily-report-btn" onclick="downloadDailyReportImage(document.getElementById('unitInapDate').value)" type="button">⬇ DAILY REPORT</button>
+</div>
+</div>
+<div class="unitinap-kpis">
+<div class="unitinap-kpi"><span>JUMLAH UNIT INAP</span><strong id="unitInapTotal">0</strong></div>
+<div class="unitinap-kpi missing"><span>BELUM ADA PKB</span><strong id="unitInapMissingPkb">0</strong></div>
+</div>
+<div class="unitinap-status" id="unitInapStatus">Memuat audit unit inap...</div>
+<div class="unitinap-table-wrap">
+<table class="unitinap-table">
+<thead><tr><th>NO</th><th>NO POLISI</th><th>NO PKB</th><th>GROUP</th><th>PROSES</th><th>KETERANGAN</th></tr></thead>
+<tbody id="unitInapBody"><tr><td class="unitinap-empty" colspan="6">Memuat data...</td></tr></tbody>
+</table>
+</div>
+</section>
+</main>
+<div class="modal" id="unitModal" onclick="closeModal(event)">
+<div class="modal-card jpcb-detail-modal" onclick="event.stopPropagation()">
+<div class="modal-head"><div><h3 id="modalTitle">DETAIL UNIT</h3><div class="modal-sub" id="modalSub">Detail unit &amp; histori</div></div><button class="close" onclick="closeModal()">×</button></div>
+<div class="modal-body" id="modalDetailBody"><div class="search-empty"><strong>Memuat detail...</strong></div></div>
+</div>
+</div>
+
+<script>
+window.__MODULE_PAGE__ = document.body.dataset.module || '';
+
+/* UNIT INAP EXPORT OVERRIDE — hanya untuk halaman modular ini.
+   API/backend dan js/jpcb-core.js tidak diubah. */
+(function(){
+  function clean(v){ return String(v == null ? '' : v).replace(/\s+/g,' ').trim(); }
+  function dateLabel(raw){
+    if(typeof formatUnitInapDateLabel === 'function') return formatUnitInapDateLabel(raw);
+    return clean(raw);
+  }
+  function uniqueRows(rows){
+    const seen=new Set(), out=[];
+    (Array.isArray(rows)?rows:[]).forEach(function(r){
+      const pkb=clean(r.noPKB), nopol=clean(r.noPolisi);
+      const key=pkb ? 'PKB:'+pkb.toUpperCase() : (nopol ? 'NOPOL:'+nopol.toUpperCase() : 'ROW:'+out.length);
+      if(!seen.has(key)){ seen.add(key); out.push(r); }
+    });
+    return out;
+  }
+  async function getRowsForExport(){
+    const input=document.getElementById('unitInapDate');
+    const selectedDate=input && input.value ? input.value : (window.unitInapLastDate || '');
+    if(!selectedDate) throw new Error('Tanggal Unit Inap belum tersedia.');
+    const url=JPCB_API_URL+'?action=unitInap&tanggal='+encodeURIComponent(selectedDate)+'&ts='+Date.now();
+    const response=await fetch(url,{method:'GET',cache:'no-store'});
+    if(!response.ok) throw new Error('HTTP '+response.status);
+    const data=await response.json();
+    if(!data || data.success===false) throw new Error((data&&data.message)||'Data Unit Inap tidak valid');
+    return {data:data, rows:uniqueRows(data.rows)};
+  }
+
+  window.downloadUnitInapExcel=async function(){
+    const btns=document.querySelectorAll('.unitinap-datebox .unitinap-btn');
+    let btn=null; for(let i=0;i<btns.length;i++){ if((btns[i].textContent||'').toUpperCase().includes('EXCEL')){btn=btns[i];break;} }
+    const old=btn?btn.textContent:'';
+    if(btn){btn.disabled=true;btn.textContent='⏳ MEMBUAT EXCEL...';}
+    try{
+      if(!window.XLSX) throw new Error('Library Excel belum termuat. Periksa koneksi internet.');
+      const pack=await getRowsForExport();
+      const rows=pack.rows, data=pack.data;
+      const aoa=[
+        ['DATA UNIT INAP'],
+        ['Tanggal Audit',dateLabel(data.dateUsed || document.getElementById('unitInapDate')?.value || '')],
+        ['Jumlah Unit',rows.length],
+        [],
+        ['NO','NO POLISI','NO PKB','GROUP','PROSES','KETERANGAN']
+      ];
+      rows.forEach(function(r,i){
+        aoa.push([i+1,clean(r.noPolisi)||'-',clean(r.noPKB)||'BELUM ADA PKB',clean(r.group)||'-',clean(r.proses)||'-',clean(r.keterangan)||'-']);
+      });
+      const ws=XLSX.utils.aoa_to_sheet(aoa);
+      ws['!cols']=[{wch:6},{wch:16},{wch:18},{wch:12},{wch:25},{wch:45}];
+      ws['!freeze']={xSplit:0,ySplit:5};
+      ws['!autofilter']={ref:'A5:F'+Math.max(5,aoa.length)};
+      const wb=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb,ws,'UNIT INAP');
+      const d=(data.dateUsed||document.getElementById('unitInapDate')?.value||'').replace(/-/g,'');
+      XLSX.writeFile(wb,'UNIT_INAP_'+(d||'AUDIT')+'.xlsx');
+    }catch(err){
+      console.error('Excel Unit Inap:',err);
+      alert('Gagal membuat Excel Unit Inap.\n'+(err&&err.message?err.message:err));
+    }finally{ if(btn){btn.disabled=false;btn.textContent=old||'⬇ DOWNLOAD EXCEL';} }
+  };
+
+  window.downloadUnitInapPDF=async function(){
+    const input=document.getElementById('unitInapDate');
+    const selectedDate=input && input.value ? input.value : (window.unitInapLastDate || '');
+    if(!selectedDate){alert('Tanggal Unit Inap belum tersedia. Silakan pilih tanggal terlebih dahulu.');return;}
+    const btns=document.querySelectorAll('.unitinap-datebox .unitinap-btn');
+    let btn=null; for(let i=0;i<btns.length;i++){ if((btns[i].textContent||'').toUpperCase().includes('DOWNLOAD PDF')){btn=btns[i];break;} }
+    const old=btn?btn.textContent:''; if(btn){btn.disabled=true;btn.textContent='⏳ MEMBUAT PDF...';}
+    try{
+      const pack=await getRowsForExport(), rows=pack.rows, data=pack.data;
+      if(!window.jspdf || !window.jspdf.jsPDF) throw new Error('Library PDF belum termuat.');
+      const jsPDF=window.jspdf.jsPDF;
+      const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
+      const pageW=doc.internal.pageSize.getWidth();
+      const pageH=doc.internal.pageSize.getHeight();
+      const date=dateLabel(data.dateUsed||selectedDate);
+      doc.setFillColor(255,255,255); doc.rect(0,0,pageW,pageH,'F');
+      const tl=document.querySelector('.tunas-real-logo'), yl=document.querySelector('.toyota-real-logo');
+      try{if(tl && tl.src) doc.addImage(tl.src,'PNG',12,7,45,9);}catch(e){}
+      try{if(yl && yl.src) doc.addImage(yl.src,'PNG',pageW-52,6,40,9);}catch(e){}
+      doc.setTextColor(25,25,25); doc.setFont('helvetica','bold'); doc.setFontSize(15);
+      doc.text('DATA UNIT INAP',pageW/2,14,{align:'center'});
+      doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(80,80,80);
+      doc.text('TUNAS TOYOTA BINTARO — BODY & PAINT',pageW/2,19,{align:'center'});
+      doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(30,30,30);
+      doc.text('TANGGAL AUDIT: '+date,pageW/2,24,{align:'center'});
+      doc.text('JUMLAH UNIT: '+rows.length,14,32);
+      doc.autoTable({
+        startY:36,
+        margin:{left:10,right:10},
+        head:[['NO','NO POLISI','NO PKB','GROUP','PROSES','KETERANGAN']],
+        body:rows.map(function(r,i){return [i+1,clean(r.noPolisi)||'-',clean(r.noPKB)||'BELUM ADA PKB',clean(r.group)||'-',clean(r.proses)||'-',clean(r.keterangan)||'-'];}),
+        theme:'grid',
+        styles:{font:'helvetica',fontSize:7,cellPadding:2,textColor:[25,25,25],lineColor:[190,190,190],lineWidth:.2,overflow:'linebreak'},
+        headStyles:{fillColor:[201,0,10],textColor:[255,255,255],fontStyle:'bold',fontSize:7},
+        columnStyles:{0:{cellWidth:8,halign:'center'},1:{cellWidth:25},2:{cellWidth:30},3:{cellWidth:18},4:{cellWidth:37},5:{cellWidth:'auto'}},
+        didDrawPage:function(){
+          const h=doc.internal.pageSize.getHeight();
+          doc.setFont('helvetica','normal'); doc.setFontSize(6.5); doc.setTextColor(100,100,100);
+          doc.text('Unit Inap • '+date,pageW/2,h-7,{align:'center'});
+          doc.text('Halaman '+doc.internal.getNumberOfPages(),pageW-12,h-7,{align:'right'});
+        }
+      });
+      doc.save('UNIT_INAP_'+selectedDate.replace(/-/g,'')+'.pdf');
+    }catch(err){
+      console.error('PDF Unit Inap:',err);
+      alert('Gagal membuat PDF Unit Inap.\n'+(err&&err.message?err.message:err));
+    }finally{if(btn){btn.disabled=false;btn.textContent=old||'⬇ DOWNLOAD PDF';}}
+  };
+})();
+</script>
+
+<script src="../js/config.js"></script>
+
+<script src="../js/common-audio.js"></script>
+<script src="../js/wake-lock.js"></script>
+<script src="../js/tv-mode.js"></script>
+<script src="../js/jpcb-core.js"></script>
+<script>
+window.addEventListener('load',function(){
+  if(typeof openUnitInapPage==='function') openUnitInapPage();
+});
+</script>
+
+</body>
+</html>
