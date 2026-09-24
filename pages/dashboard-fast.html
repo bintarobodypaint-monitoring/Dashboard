@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard | Digital Monitoring System</title>
+<link rel="stylesheet" href="../css/dashboard.css?v=20260921-3">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div>
+    <div class="brand">TUNAS TOYOTA BINTARO</div>
+    <div class="subtitle">DIGITAL MONITORING SYSTEM</div>
+  </div>
+  <div class="top-actions">
+    <span id="lastUpdate">Memuat...</span>
+    <button onclick="window.location.href='../index.html'">← DASHBOARD UTAMA</button>
+    <button onclick="DMSAuth && DMSAuth.logout(); location.href='../index.html?login=1'">LOGOUT</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="page-head">
+    <div>
+      <div class="eyebrow">MENU 01</div>
+      <h1>DASHBOARD</h1>
+      <p>Ringkasan monitoring unit, WIP, overdue dan leadtime.</p>
+    </div>
+    <div class="filters">
+      <label>Bulan<select id="month"></select></label>
+      <label>Tahun<select id="year"></select></label>
+      <button class="primary" id="refreshBtn">↻ REFRESH</button>
+      <button id="csvBtn">⇩ CSV LEADTIME</button>
+    </div>
+  </section>
+
+  <section class="kpis" id="kpis">
+    <article><span>UNIT IN</span><strong id="kIn">—</strong><small>berdasarkan TGL PKB</small></article>
+    <article><span>UNIT OUT</span><strong id="kOut">—</strong><small>berdasarkan tanggal selesai</small></article>
+    <article><span>WIP TOTAL</span><strong id="kWip">—</strong><small>exclude DELIVERY & BILLING</small></article>
+    <article><span>OVERDUE</span><strong id="kOverdue">—</strong><small>WIP melewati janji selesai</small></article>
+    <article><span>UNIT INAP</span><strong id="kInap">—</strong><small id="kInapDate">audit terbaru</small></article>
+    <article class="redo-kpi"><span>REDO</span><strong class="redo-values"><b>PAINTING <em id="kRedoPaintPct">—</em></b><b>FI <em id="kRedoFiPct">—</em></b></strong><small>persentase redo unit • target Painting &lt; 9% • FI &lt; 5%</small></article>
+    <article><span>QC DEFECT</span><strong id="kQc">—</strong><small>data dari API QC</small></article>
+    <article class="accent"><span>AVG LEADTIME</span><strong id="kLead">—</strong><small>hari • semua kategori</small></article>
+  </section>
+
+  <section class="grid two">
+    <article class="panel wide">
+      <div class="panel-title"><div><h2>UNIT IN vs UNIT OUT</h2><p>Trend harian periode terpilih</p></div></div>
+      <div class="chartbox"><canvas id="trendChart"></canvas></div>
+    </article>
+    <article class="panel">
+      <div class="panel-title"><div><h2>WIP PER GROUP</h2><p>WIP aktif saat ini</p></div></div>
+      <div class="chartbox"><canvas id="wipChart"></canvas></div>
+    </article>
+  </section>
+
+
+  <section class="panel">
+    <div class="panel-title"><div><h2>UNIT INAP PER HARI</h2><p>Jumlah unit inap hasil audit untuk setiap tanggal dalam bulan terpilih</p></div></div>
+    <div class="chartbox inap-chart"><canvas id="inapChart"></canvas></div>
+  </section>
+
+  <section class="grid two">
+    <article class="panel">
+      <div class="panel-title"><div><h2>LEADTIME</h2><p>Tanggal selesai − tanggal cetak PKB • satuan hari</p></div></div>
+      <div class="table-wrap">
+        <table id="leadTable">
+          <thead><tr><th>KATEGORI</th><th>UNIT</th><th>TOTAL HARI</th><th>RATA-RATA</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="chartbox compact"><canvas id="leadChart"></canvas></div>
+    </article>
+    <article class="panel">
+      <div class="panel-title"><div><h2>WIP PER PROCESS</h2><p>Progress aktif • kosong tidak dihitung</p></div></div>
+      <div class="chartbox"><canvas id="processChart"></canvas></div>
+    </article>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title"><div><h2>DETAIL LEADTIME</h2><p>Hanya unit yang memiliki tanggal cetak PKB dan tanggal selesai.</p></div><input id="leadSearch" placeholder="Cari No Polisi / No PKB"></div>
+    <div class="table-wrap tall">
+      <table id="detailTable">
+        <thead><tr><th>NO POLISI</th><th>NO PKB</th><th>KATEGORI</th><th>GROUP</th><th>SA</th><th>TGL CETAK PKB</th><th>TGL SELESAI</th><th>LEADTIME</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div id="status" class="status">Menyiapkan data...</div>
+</main>
+
+<script src="../js/auth.js?v=4"></script>
+<script>
+if(window.DMSAuth && !DMSAuth.requireLogin()) {}
+</script>
+
+<script>
+/* =========================================================
+   DASHBOARD FAST START
+   - Tampilkan snapshot terakhir segera saat halaman dibuka.
+   - API tetap diambil di background.
+   - Tidak mengubah API/renderer dashboard.js.
+   - Hanya action=dashboard yang diperlakukan khusus.
+   ========================================================= */
+(function(){
+  'use strict';
+
+  const CACHE_KEY = 'DMS_DASHBOARD_LAST_SUCCESS_V1';
+  const RELOAD_KEY = 'DMS_DASHBOARD_BG_REFRESH_V1';
+
+  function isDashboardRequest(input){
+    try{
+      const url = typeof input === 'string'
+        ? input
+        : (input && input.url ? input.url : '');
+      return /[?&]action=dashboard(?:&|$)/i.test(url);
+    }catch(e){
+      return false;
+    }
+  }
+
+  function readCache(){
+    try{
+      const raw = localStorage.getItem(CACHE_KEY);
+      if(!raw) return null;
+      const item = JSON.parse(raw);
+      if(!item || !item.data || item.data.success !== true) return null;
+      return item;
+    }catch(e){
+      return null;
+    }
+  }
+
+  function writeCache(data){
+    try{
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        savedAt: Date.now(),
+        data: data
+      }));
+    }catch(e){}
+  }
+
+  const nativeFetch = window.fetch.bind(window);
+  let firstDashboardFetch = true;
+  let backgroundStarted = false;
+
+  window.fetch = function(input, init){
+    if(!firstDashboardFetch || !isDashboardRequest(input)){
+      return nativeFetch(input, init);
+    }
+
+    firstDashboardFetch = false;
+
+    const cached = readCache();
+
+    if(!cached){
+      return nativeFetch(input, init).then(function(response){
+        response.clone().json().then(function(data){
+          if(data && data.success === true) writeCache(data);
+        }).catch(function(){});
+        return response;
+      });
+    }
+
+    /* Render cache immediately through the existing dashboard.js fetch flow. */
+    let backgroundUrl = '';
+    try{
+      backgroundUrl = typeof input === 'string' ? input : input.url;
+    }catch(e){}
+
+    if(!backgroundStarted && backgroundUrl){
+      backgroundStarted = true;
+
+      /* Fresh request runs independently; dashboard UI is not blocked. */
+      nativeFetch(backgroundUrl, Object.assign({}, init || {}, {
+        cache: 'no-store'
+      }))
+      .then(function(response){
+        if(!response.ok) throw new Error('HTTP '+response.status);
+        return response.json();
+      })
+      .then(function(data){
+        if(!data || data.success !== true) return;
+        writeCache(data);
+
+        /*
+         * Existing dashboard.js is kept untouched. Reload once after a
+         * successful background update so its normal renderer receives
+         * the newest API response. Session flag prevents a reload loop.
+         */
+        try{
+          if(sessionStorage.getItem(RELOAD_KEY) !== '1'){
+            sessionStorage.setItem(RELOAD_KEY, '1');
+            window.location.reload();
+          }else{
+            sessionStorage.removeItem(RELOAD_KEY);
+          }
+        }catch(e){}
+      })
+      .catch(function(err){
+        console.warn('Dashboard background refresh:', err);
+        try{ sessionStorage.removeItem(RELOAD_KEY); }catch(e){}
+      });
+    }
+
+    const body = JSON.stringify(cached.data);
+    return Promise.resolve(new Response(body, {
+      status: 200,
+      headers: {'Content-Type':'application/json'}
+    }));
+  };
+
+  /*
+   * After a normal fresh load (no cache), dashboard.js receives the API
+   * response normally and this observer stores it. This does not interfere
+   * with the existing dashboard logic.
+   */
+  window.addEventListener('beforeunload', function(){});
+})();
+</script>
+
+<script src="../js/dashboard.js?v=20260924-fast-cache1"></script>
+</body>
+</html>
