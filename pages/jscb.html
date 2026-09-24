@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JSCB — SCHEDULE BULAN</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#dfe3e7;font-family:Arial;color:#17202a}.wrap{padding:10px}
+.tabs{display:flex;gap:4px;background:#eee;padding:5px;border:1px solid #aaa}.tab{padding:9px 15px;border:1px solid #888;background:#ddd;font-weight:800;cursor:pointer}.tab.active{background:#0b3f78;color:#fff}
+.boardTabs{display:flex;gap:4px;padding:6px 7px 0;background:#fff;border-bottom:1px solid #999}.boardTab{padding:8px 14px;border:1px solid #888;border-bottom:0;background:#ddd;font-weight:900;cursor:pointer}.boardTab.active{background:#0b3f78;color:#fff}.boardTab.grab.active{background:#d60000}.boardTab.rj.active{background:#555;color:#fff}
+.standaloneHeader{background:#0b3f78;color:#fff;padding:8px 12px;margin-bottom:8px;border:2px solid #999;box-shadow:0 2px 8px #0002}.standaloneTitle{text-align:center;font-size:20px;font-weight:900;padding:6px}
+.board{background:#fff;border:2px solid #999;box-shadow:0 2px 8px #0002}.title{background:#0b3f78;color:#fff;text-align:center;padding:15px;font-size:25px;font-weight:900}
+.toolbar{padding:7px;background:#f1f1f1;border-bottom:1px solid #999;display:flex;gap:6px;align-items:center;flex-wrap:wrap}button{border:1px solid #777;background:#fff;padding:7px 11px;border-radius:4px;font-weight:800}button.active{background:#d60000;color:#fff}
+#status{font-size:11px;color:#555;margin-left:auto}.summary{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;padding:8px;background:#f5f5f5}.kpi{border:1px solid #999;padding:8px;background:#fff}.kpi b{font-size:10px;display:block}.kpi strong{font-size:20px}
+.scroll{overflow:auto}.physical{width:1500px;margin:auto;padding:10px}.date{font-size:13px;font-weight:800;margin-bottom:7px}
+.layout{display:grid;grid-template-columns:270px 730px 430px;border:2px solid #999}.head{height:40px;background:#0b3f78;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px}
+.stalls .stall{height:57px;border-bottom:1px solid #aaa;display:grid;grid-template-columns:38px 1fr}.no{display:flex;align-items:center;justify-content:center;background:#f4f4f4;border-right:1px solid #aaa;font-size:11px}.sn{display:flex;align-items:center;padding:5px;font-size:10px}
+.timeline{position:relative}.nowLine{position:absolute;top:40px;bottom:0;width:2px;background:#d60000;z-index:8;pointer-events:none;box-shadow:0 0 0 1px #fff8}.nowLine span{position:absolute;top:-17px;left:3px;background:#d60000;color:#fff;font-size:8px;font-weight:900;padding:2px 4px;white-space:nowrap}.time{height:40px;display:grid;grid-template-columns:repeat(9,1fr)}.time div{display:flex;align-items:center;justify-content:center;border-right:1px solid #aaa;font-size:10px;font-weight:800}.rows{position:relative}.tr{height:57px;border-bottom:1px solid #aaa;position:relative;background:repeating-linear-gradient(to right,transparent 0,transparent calc(11.11% - 1px),#bbb calc(11.11% - 1px),#bbb 11.11%)}
+.break{position:absolute;top:40px;bottom:0;left:44.44%;width:11.11%;background:#ddd8;z-index:2;display:flex;align-items:center;justify-content:center;font-weight:900;writing-mode:vertical-rl;letter-spacing:5px}
+.bar{position:absolute;height:18px;border-radius:2px;z-index:4;display:flex;align-items:center;justify-content:center;overflow:hidden;white-space:nowrap;font-size:8px;font-weight:800;cursor:pointer}.plan{top:4px;background:#e4e7e9;border:1px solid #777}.actual{top:32px;background:#dcecff;border:2px solid #1769aa;color:#064b78}.risk{border-color:#d60000;background:#ffe0e0;color:#8b0000}.lab{position:absolute;left:3px;font-size:7px;color:#666;font-weight:900;z-index:6}.lp{top:1px}.la{top:29px}
+.right{border-left:1px solid #999}.panel{border-bottom:8px solid #fff}.panel h3{margin:0;background:#0b3f78;color:#fff;text-align:center;font-size:11px;padding:7px}table{border-collapse:collapse;width:100%;font-size:8px}th,td{border:1px solid #999;padding:4px;height:24px}th{background:#eee}
+.queue td{background:#fff7d6;font-weight:700}.riskrow td{background:#ffe4e4}.approve{padding:10px;border-top:1px solid #aaa;background:#f8f8f8}.approve h3{margin:0 0 7px}.planrow{display:grid;grid-template-columns:35px 100px 75px 75px 1fr auto;gap:5px;padding:6px;border-bottom:1px solid #ddd;font-size:9px;align-items:center}.decisionBtns{display:flex;gap:4px}.decisionBtns button{font-size:8px;padding:5px 7px}.btnApprove{background:#dcefdc!important;border-color:#4d8b4d!important;color:#155b15}.btnChange{background:#fff2cc!important;border-color:#b38b00!important;color:#6b5200}.decisionState{font-weight:900;font-size:8px}.danger{color:#a00000;font-weight:900}
+.jscb{padding:10px}.jscbTable{width:100%;min-width:1100px}.jscbTable th,.jscbTable td{font-size:10px}.jscbTable .job{white-space:nowrap}.badge{padding:3px 5px;border-radius:3px;background:#eee;font-weight:800}.riskbadge{background:#ffd5d5;color:#900}.okbadge{background:#dcefdc;color:#176117}
+.modalbg{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:15px;z-index:30}.modal{background:#fff;max-width:650px;width:100%;max-height:85vh;overflow:auto;border-radius:8px;padding:15px}.modal button{float:right;background:#d60000;color:#fff}.modal h2{color:#0b3f78}
+
+/* ===== CONTROLLER PLANNING PER PROCESS ===== */
+.processControl{padding:10px;border-top:2px solid #0b3f78;background:#fff}.processControl h3{margin:0 0 5px;color:#0b3f78}.processHint{font-size:9px;color:#555;margin-bottom:8px}.processTabs{display:flex;gap:4px;overflow:auto;padding-bottom:6px}.processTabs button{font-size:9px;white-space:nowrap}.processTabs button.sel{background:#0b3f78;color:#fff}.processQueue{border:1px solid #aaa;background:#f7f7f7;min-height:60px}.pqrow{display:grid;grid-template-columns:28px 105px 70px 95px 90px 1fr auto;gap:5px;align-items:center;padding:7px;border-bottom:1px solid #ddd;background:#fff;font-size:9px}.pqrow:last-child{border-bottom:0}.pqrow.dragging{opacity:.45}.dragHandle{cursor:grab;font-size:16px;text-align:center}.pqStatus{font-weight:900}.pqStatus.ok{color:#176117}.pqStatus.tight{color:#8a6500}.pqStatus.risk{color:#a00000}.pqActions{display:flex;gap:3px}.pqActions button{font-size:8px;padding:4px 6px}.miniBtn{font-size:8px!important;padding:4px 6px!important}.processControlEmpty{padding:14px;text-align:center;font-size:10px;color:#777}.manualBox{background:#f3f7fb;border:1px solid #b7c9da;padding:8px;margin-top:8px}.manualBox b{color:#0b3f78}.processDetail{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:8px 0}.processDetail .pd{border:1px solid #ccc;padding:6px;background:#fafafa}.processDetail label{display:block;font-size:9px;font-weight:800;margin-bottom:3px}.processDetail input{width:100%;padding:6px;border:1px solid #999}.approveMini{background:#dcefdc!important;border-color:#4d8b4d!important;color:#155b15}.changeMini{background:#fff2cc!important;border-color:#b38b00!important;color:#6b5200}.rejectMini{background:#ffe0e0!important;border-color:#a33!important;color:#8b0000}.modalWide{max-width:900px!important}.modalWide .processDetail{grid-template-columns:1fr 1fr}.modalProcessRow{border:1px solid #ccc;margin:6px 0;padding:7px;background:#fafafa}.modalProcessHead{display:grid;grid-template-columns:1fr auto;gap:5px;align-items:center}.modalProcessHead b{color:#0b3f78}.modalProcessActions{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}.decisionNote{font-size:8px;color:#666;margin-top:3px}
+.historicalPlan{border-left:5px solid #777;background:#f5f5f5}.currentPlan{border-left:5px solid #1769aa;background:#eef6ff}.nextApproval{border-left:5px solid #d60000;background:#fff4f4}.futurePlan{border-left:5px solid #aaa;background:#fafafa}
+
+@media(max-width:700px){.pqrow{grid-template-columns:24px 95px 65px 90px 85px 170px auto;min-width:700px}.processQueue{overflow:auto}.processTabs button{font-size:8px}.processDetail{grid-template-columns:1fr}}
+</style>
+<style>
+.bar{min-width:48px!important;height:20px!important;font-size:9px!important;font-weight:900!important}
+.bar.plan{background:#f4b183!important;border:2px solid #c55a11!important;color:#111!important}
+.bar.actual{background:#5b9bd5!important;border:2px solid #1f4e79!important;color:#fff!important}
+.bar.actual.risk{background:#e74c3c!important;border-color:#8b0000!important;color:#fff!important}
+
+/* ===== MONTHLY JSCB PLAN VIEW ===== */
+.monthBoard{background:#fff;border:2px solid #999;margin-top:8px}.monthBoardTabs{display:flex;gap:4px;padding:6px 7px 0;background:#fff;border-bottom:1px solid #999}.monthBoardTab{padding:8px 14px;border:1px solid #888;border-bottom:0;background:#ddd;font-weight:900;cursor:pointer}.monthBoardTab.active{background:#0b3f78;color:#fff}.monthBoardTab.grab.active{background:#d60000}.monthBoardTab.rj.active{background:#555;color:#fff}.monthToolbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px;background:#f1f1f1;border-bottom:1px solid #999}.monthToolbar button{font-size:10px}.monthTitle{background:#0b3f78;color:#fff;text-align:center;padding:13px;font-size:20px;font-weight:900}.monthMeta{padding:7px 9px;background:#f7f7f7;border-bottom:1px solid #aaa;font-size:10px;font-weight:800}.monthScroll{overflow:auto;max-width:100%;border-top:1px solid #999}.monthGrid{display:grid;grid-template-columns:180px repeat(var(--days),190px);min-width:max-content}.monthDay{height:62px;background:#0b3f78;color:#fff;border-right:1px solid #789;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:900}.monthDay small{font-size:9px;margin-top:3px}.monthDay.sun{background:#666}.monthDay.today{box-shadow:inset 0 -5px 0 #d60000}.monthUnit{position:sticky;left:0;z-index:5;height:64px;background:#f4f4f4;border-right:2px solid #999;border-bottom:1px solid #aaa;display:flex;flex-direction:column;justify-content:center;padding:5px 7px;font-size:9px;font-weight:900}.monthUnit small{font-size:8px;font-weight:700;color:#555;margin-top:2px}.monthCorner{position:sticky;left:0;z-index:12;height:62px;background:#0b3f78;color:#fff;border-right:2px solid #999;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900}.monthCell{position:relative;height:64px;border-right:1px solid #ccc;border-bottom:1px solid #aaa;background:repeating-linear-gradient(to right,#fff 0,#fff calc(25% - 1px),#ddd calc(25% - 1px),#ddd 25%)}.monthCell.breakShade{background:linear-gradient(to right,transparent 0,transparent 50%,#e7e7e7 50%,#e7e7e7 62.5%,transparent 62.5%),repeating-linear-gradient(to right,#fff 0,#fff calc(25% - 1px),#ddd calc(25% - 1px),#ddd 25%)}.mbar{position:absolute;height:18px;border-radius:3px;top:6px;display:flex;align-items:center;padding:0 4px;overflow:hidden;white-space:nowrap;font-size:8px;font-weight:900;border:1px solid #555;cursor:pointer;z-index:3}.mbar + .mbar{top:29px}.mbar.planBody{background:#f4b183;border-color:#c55a11}.mbar.planPutty{background:#ffe699;border-color:#b38b00}.mbar.planSurf{background:#a9d18e;border-color:#548235}.mbar.planPaint{background:#f4b183;border-color:#c55a11}.mbar.planPolish{background:#9dc3e6;border-color:#2f75b5}.mbar.planReassy{background:#5b9bd5;color:#fff;border-color:#1f4e79}.mbar.planWash{background:#76d7ea;border-color:#1b8ca3}.mbar.planFinish{background:#d6b48c;border-color:#8b6a47}.mbar.planFinal{background:#c9b1e8;border-color:#7030a0}.mbar.risk{background:#e74c3c!important;border-color:#8b0000!important;color:#fff!important}.monthLegend{display:flex;gap:10px;flex-wrap:wrap;padding:8px;font-size:9px;font-weight:800;border-bottom:1px solid #aaa}.legendItem{display:flex;align-items:center;gap:4px}.legendBox{width:18px;height:10px;border:1px solid #777}.monthKpi{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:8px}.monthKpi .k{border:1px solid #aaa;background:#f7f7f7;text-align:center;padding:7px}.monthKpi b{display:block;font-size:9px}.monthKpi strong{font-size:18px}@media(max-width:700px){.monthTitle{font-size:15px}.monthKpi{grid-template-columns:repeat(2,1fr)}.monthGrid{grid-template-columns:140px repeat(var(--days),170px)}.monthUnit{width:140px}.monthCorner{width:140px}.monthDay{height:56px}}
+
+</style><script src="../js/auth.js?v=3"></script></head>
+<body data-module="jscb"><script>if(!DMSAuth.requireLogin())document.documentElement.style.display="none";</script><div class="wrap">
+<section id="MONTHPLAN" class="board">
+<div class="monthBoard">
+<div class="monthBoardTabs"><button class="monthBoardTab active" data-board="REGULER" onclick="setBoardType('REGULER')">JSCB REGULER</button><button class="monthBoardTab rj" data-board="RAWAT JALAN" onclick="setBoardType('RAWAT JALAN')">JSCB RAWAT JALAN</button><button class="monthBoardTab grab" data-board="GRAB" onclick="setBoardType('GRAB')">JSCB GRAB</button></div>
+<div class="monthTitle">JSCB — SCHEDULE BULAN</div>
+<div class="monthToolbar">
+<button onclick="monthPlanPrev()">◀ BULAN SEBELUMNYA</button><b id="monthPlanLabel">-</b><button onclick="monthPlanNext()">BULAN BERIKUTNYA ▶</button><button onclick="monthPlanToday()">BULAN INI</button><button onclick="load()">↻ REFRESH DATABASE</button><button onclick="setFilter('ALL')">ALL</button><button onclick="setFilter('ATU 1')">ATU 1</button><button onclick="setFilter('ATU 2')">ATU 2</button>
+</div>
+<div id="monthPlanKpi" class="monthKpi"></div>
+<div class="monthMeta" id="monthPlanMeta">Menampilkan seluruh PLAN per proses. Scroll horizontal untuk melihat tanggal sampai akhir bulan.</div>
+<div class="monthLegend">
+<div class="legendItem"><span class="legendBox" style="background:#f4b183"></span>PANEL REPAIR</div><div class="legendItem"><span class="legendBox" style="background:#ffe699"></span>PUTTY</div><div class="legendItem"><span class="legendBox" style="background:#a9d18e"></span>SURFACER</div><div class="legendItem"><span class="legendBox" style="background:#f4b183"></span>PAINTING</div><div class="legendItem"><span class="legendBox" style="background:#9dc3e6"></span>POLISHING</div><div class="legendItem"><span class="legendBox" style="background:#5b9bd5"></span>RE-ASSEMBLY</div><div class="legendItem"><span class="legendBox" style="background:#76d7ea"></span>WASHING</div><div class="legendItem"><span class="legendBox" style="background:#d6b48c"></span>FINISHING</div><div class="legendItem"><span class="legendBox" style="background:#c9b1e8"></span>FINAL INSPECTION</div><div class="legendItem"><span class="legendBox" style="background:#e74c3c"></span>AT RISK</div>
+</div>
+<div class="monthScroll" id="monthPlanScroll"></div>
+</div>
+</section>
+
+
+</div>
+
+<script>
+const API='https://script.google.com/macros/s/AKfycbzKxJ52Re-WBdWkuEP_mziWSnDDqzQLSIp2oWAg7SGt24bvSemH-ABnkkDNQYpJEeI5/exec';
+let DATA=null, filter='ALL', boardType='REGULER';
+const DECISION_KEY='JSCB_CONTROLLER_DECISIONS_V22';
+const PROCESS_DECISION_KEY='JSCB_PROCESS_DECISIONS_V22';
+const PROCESS_ORDER_KEY='JSCB_PROCESS_ORDER_V22';
+let processDecisions={}, processOrders={};
+try{processDecisions=JSON.parse(localStorage.getItem(PROCESS_DECISION_KEY)||'{}')||{}}catch(e){processDecisions={}}
+try{processOrders=JSON.parse(localStorage.getItem(PROCESS_ORDER_KEY)||'{}')||{}}catch(e){processOrders={}}
+let selectedProcess='PANEL REPAIR';
+let decisions={};
+try{decisions=JSON.parse(localStorage.getItem(DECISION_KEY)||localStorage.getItem('JSCB_CONTROLLER_DECISIONS_V17')||'{}')||{}}catch(e){decisions={}}
+let boardDate=new Date(2026,8,15); boardDate.setHours(0,0,0,0);
+const stalls=['BODY REPAIR','BODY REPAIR','BODY REPAIR - FRAME ALIGNER','PUTTY','PUTTY','SURFACER','SURFACER','COMBO/BOOTH','POLISHING','POLISHING','RE-ASSY'];
+const DUR={LIGHT:{'PANEL REPAIR':5,'PUTTY':3,'SURFACER':2.5,'PAINTING':3.5,'POLISHING':2.5,'RE-ASSEMBLY':2,'WASHING':1,'FINISHING':2,'FINAL INSPECTION':1},MEDIUM:{'PANEL REPAIR':10,'PUTTY':7,'SURFACER':6,'PAINTING':8,'POLISHING':5,'RE-ASSEMBLY':6,'WASHING':2.5,'FINISHING':7,'FINAL INSPECTION':1},HEAVY:{'PANEL REPAIR':22,'PUTTY':14,'SURFACER':12,'PAINTING':18,'POLISHING':10,'RE-ASSEMBLY':12,'WASHING':5,'FINISHING':11,'FINAL INSPECTION':1}};
+const PROC=[['PANEL REPAIR', [1,2,3]],['PUTTY',[4,5]],['SURFACER',[6,7]],['PAINTING',[8]],['POLISHING',[9,10]],['RE-ASSEMBLY',[11]],['WASHING',[11]],['FINISHING',[11]],['FINAL INSPECTION',[11]]];
+const ACT=[['PANEL REPAIR','STR PANEL REPAIR','STP PANEL REPAIR'],['PUTTY','STR PUTTY','STP PUTTY'],['SURFACER','STR SURFACER','STP SURFACER'],['PAINTING','STR PAINTING','STP PAINTING'],['POLISHING','STR POLISH','STP POLISH'],['RE-ASSEMBLY','STR ASSEMBLY','STP ASSEMBLY'],['FINAL INSPECTION','STR FINAL CHECK','STP FINAL CHECK']];
+function dayKey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function dateOnly(x){if(!x)return null;let d=new Date(x);if(isNaN(d))return null;d.setHours(0,0,0,0);return d}
+function prevDay(){boardDate.setDate(boardDate.getDate()-1);renderJpcb()}
+function nextDay(){boardDate.setDate(boardDate.getDate()+1);renderJpcb()}
+function todayDay(){boardDate=new Date();boardDate.setHours(0,0,0,0);renderJpcb()}
+function esc(x){return String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function dt(x){if(!x)return '-';let d=new Date(x);return isNaN(d)?x:d.toLocaleString('id-ID',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}
+function hours(x){if(x==null||isNaN(x))return '-';let n=Math.round(x*10)/10;return (n>=0?'+':'')+n+'j'}
+function modeOf(u){let s=String(u.kerusakan||u.KERUSAKAN||'').toUpperCase();if(s.includes('HEAVY'))return'HEAVY';if(s.includes('MEDIUM'))return'MEDIUM';if(s.includes('LIGHT'))return'LIGHT';return''}
+function normProgress(v){return String(v||'').trim().toUpperCase().replace(/\s+/g,' ')}
+function isDelivered(u){let p=normProgress(u.progress);return p==='DELIVERY'||p==='17.DELIVERY'||(p.includes('DELIVERY')&&!p.includes('WAITING'))}
+function parseDate(v){
+ if(v==null||v==='')return null;
+ if(v instanceof Date&&!isNaN(v))return new Date(v.getTime());
+ const s=String(v).trim();
+ if(!s)return null;
+ let m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+ if(m){const d=new Date(Number(m[3]),Number(m[2])-1,Number(m[1]),Number(m[4]||0),Number(m[5]||0),Number(m[6]||0));return isNaN(d)?null:d;}
+ let d=new Date(s);return isNaN(d)?null:d;
+}
+function workAdd(start,h){let d=new Date(start);let remain=Number(h)||0;while(remain>0){if(d.getDay()===0){d.setDate(d.getDate()+1);d.setHours(8,0,0,0);continue}if(d.getHours()<8)d.setHours(8,0,0,0);if(d.getHours()>=16.5){d.setDate(d.getDate()+1);d.setHours(8,0,0,0);continue}if(d.getHours()>=12&&d.getHours()<13){d.setHours(13,0,0,0);continue}let end=new Date(d);let available=d.getHours()<12?12-d.getHours():16.5-d.getHours();let take=Math.min(remain,available);end.setTime(d.getTime()+take*3600000);remain-=take;d=end;if(remain>0){if(d.getHours()===12)d.setHours(13,0,0,0);else if(d.getHours()>=16.5){d.setDate(d.getDate()+1);d.setHours(8,0,0,0)}}}return d}
+function startWork(v){let d=parseDate(v)||new Date();if(d.getDay()===0){d.setDate(d.getDate()+1);d.setHours(8,0,0,0)}else if(d.getHours()<8)d.setHours(8,0,0,0);else if(d.getHours()>=16.5){d.setDate(d.getDate()+1);d.setHours(8,0,0,0)}else if(d.getHours()>=12&&d.getHours()<13)d.setHours(13,0,0,0);return d}
+function progressCode(u){
+ const p=normProgress(u.progress);
+ const m=p.match(/^(?:0?)(\d{1,2})\s*[\.\-]?/);
+ return m?Number(m[1]):null;
+}
+function processFromProgressCode(code){
+ const map={1:'PANEL REPAIR',2:'PANEL REPAIR',3:'PUTTY',4:'PUTTY',5:'SURFACER',6:'SURFACER',7:'PAINTING',8:'PAINTING',9:'POLISHING',10:'POLISHING',11:'RE-ASSEMBLY',12:'RE-ASSEMBLY',13:'WASHING',14:'FINAL INSPECTION',15:'',16:''};
+ return map[code]||'';
+}
+function nextProcess(proc){
+ const i=PROC.findIndex(p=>p[0]===proc); return i>=0&&i<PROC.length-1?PROC[i+1][0]:'';
+}
+function processForUnit(u){
+ // PROGRESS is the authoritative position. Queue/hold states never enter the plan.
+ const code=progressCode(u), fromProgress=processFromProgressCode(code);
+ if([0,1,16,17,18,19].includes(code)) return '';
+ const actualIdx=[];
+ ACT.forEach((a,i)=>{const st=u.leadtime?.[a[1]],sp=u.leadtime?.[a[2]];if(st)actualIdx.push({i,st,sp});});
+ if(fromProgress){
+   const waiting=(code===1||code===3||code===5||code===7||code===9||code===11||code===14||code===16);
+   if(waiting) return fromProgress;
+   // Active process: if STP exists, that process is complete and the plan starts next.
+   const a=ACT.find(x=>x[0]===fromProgress);
+   if(a && u.leadtime?.[a[2]]) return nextProcess(fromProgress)||fromProgress;
+   // If no stop timestamp, do not schedule the active process again.
+   // Start planning at the next process, using estimated completion of the current one.
+   return nextProcess(fromProgress)||fromProgress;
+ }
+ // Fallback only when PROGRESS is unavailable: use the latest completed ACTUAL.
+ let last=-1;
+ actualIdx.forEach(x=>{if(x.sp)last=Math.max(last,x.i)});
+ return last>=0 ? (PROC[last+1]?.[0]||PROC[last][0]) : 'PANEL REPAIR';
+}
+function processStartForUnit(u,cur){
+ const code=progressCode(u), fromProgress=processFromProgressCode(code);
+ const curIdx=PROC.findIndex(p=>p[0]===cur);
+ // Waiting stage: start from its corresponding STR timestamp if available,
+ // otherwise from STR PANEL REPAIR for the controller to plan.
+ const waiting=[1,3,5,7,9,11,14,16].includes(code);
+ if(waiting){
+   const a=ACT.find(x=>x[0]===cur);
+   return startWork(a?u.leadtime?.[a[1]]:u.leadtime?.['STR PANEL REPAIR']);
+ }
+ // Active stage already in progress: use its STP as the release point when present.
+ if(fromProgress){
+   const a=ACT.find(x=>x[0]===fromProgress);
+   if(a){
+     const sp=u.leadtime?.[a[2]];
+     if(sp)return startWork(sp);
+     const st=u.leadtime?.[a[1]];
+     if(st){
+       // Estimate the finish of the active process so it is never planned twice.
+       const mode=modeOf(u), h=Number(DUR[mode]?.[fromProgress]||0);
+       return startWork(h?workAdd(startWork(st),h):st);
+     }
+   }
+ }
+ return startWork(u.leadtime?.['STR PANEL REPAIR']);
+}
+function requiredRemaining(u,cur){
+ const mode=modeOf(u), idx=Math.max(0,PROC.findIndex(p=>p[0]===cur));
+ let h=0; for(let i=idx;i<PROC.length;i++)h+=Number(DUR[mode]?.[PROC[i][0]]||0); return h;
+}
+function basePriority(rows){
+ return rows.map(u=>{
+   const cur=processForUnit(u), st=processStartForUnit(u,cur), rem=requiredRemaining(u,cur), pf=workAdd(st,rem), dl=parseDate(u.janjiSelesai);
+   const slack=dl?(dl-pf)/3600000:null;
+   return Object.assign({},u,{_cur:cur,_baseStart:st,_remaining:rem,_baseFinish:pf,_baseSlack:slack,_nextDayPriority:nextDayPriority(u)});
+ }).sort((a,b)=>{
+   // Untuk planning 16/09, unit yang controller minta didahulukan tetap berada di depan.
+   const pa=a._nextDayPriority, pb=b._nextDayPriority;
+   if(pa!==9999 || pb!==9999){
+     if(pa!==pb)return pa-pb;
+   }
+   const sa=a._baseSlack==null?Infinity:a._baseSlack, sb=b._baseSlack==null?Infinity:b._baseSlack;
+   if(sa!==sb)return sa-sb;
+   const da=parseDate(a.janjiSelesai),db=parseDate(b.janjiSelesai); return (da?.getTime()||Infinity)-(db?.getTime()||Infinity);
+ });
+}
+function orderForProcess(proc,units){
+ const map=new Map(units.map(x=>[decisionKey(x),x]));
+ const saved=Array.isArray(processOrders[proc])?processOrders[proc]:[];
+ const out=[]; saved.forEach(k=>{if(map.has(k)){out.push(map.get(k));map.delete(k)}});
+ units.forEach(x=>{const k=decisionKey(x);if(map.has(k)){out.push(x);map.delete(k)}});
+ return out;
+}
+function buildFullPlanFromStart(u){
+ const mode=modeOf(u); if(!mode)return[];
+ const startRaw=u.leadtime?.['STR PANEL REPAIR']; if(!startRaw)return[];
+ let cursor=startWork(startRaw), out=[];
+ for(const [procRow] of PROC.entries()){
+   const proc=procRow[0], hrs=Number(DUR[mode]?.[proc]||0); if(!hrs)continue;
+   const end=workAdd(cursor,hrs);
+   out.push({process:proc,stall:procRow[1][0],start:cursor.toISOString(),end:end.toISOString(),hours:hrs,fullPlan:true});
+   cursor=end;
+ }
+ return out;
+}
+function approvalProcessForUnit(u){
+ const cur=processForUnit(u);
+ return cur || '';
+}
+
+function rebuildAllPlans(rows){
+ const eligible=rows.filter(u=>!isDelivered(u)&&!([0,1,16,17,18,19].includes(progressCode(u)))&&modeOf(u)&&processForUnit(u));
+ const prioritized=basePriority(eligible);
+ const unitMap=new Map(prioritized.map(u=>[decisionKey(u),Object.assign({},u)]));
+ const fullJobsByUnit=new Map(); prioritized.forEach(u=>fullJobsByUnit.set(decisionKey(u),buildFullPlanFromStart(u)));
+ const jobsByUnit=new Map(); prioritized.forEach(u=>jobsByUnit.set(decisionKey(u),[]));
+ const processNames=PROC.map(p=>p[0]);
+ let upstreamEnd=new Map();
+ prioritized.forEach(u=>{upstreamEnd.set(decisionKey(u),processStartForUnit(u,u._cur))});
+ // Schedule process-by-process so each process queue can be controlled independently.
+ for(const [pi,procRow] of PROC.entries()){
+   const proc=procRow[0], candidates=orderForProcess(proc,prioritized).filter(u=>{
+     const curIdx=PROC.findIndex(p=>p[0]===u._cur); return curIdx>=0 && pi>=curIdx;
+   });
+   const frees=procRow[1].map(n=>({stall:n,free:null}));
+   for(const u0 of candidates){
+     const key=decisionKey(u0), u=unitMap.get(key), mode=modeOf(u), hrs=Number(DUR[mode]?.[proc]||0); if(!hrs)continue;
+     let earliest=upstreamEnd.get(key)||new Date();
+     const manual=processDecisions[key+'|'+proc];
+     let chosen=null;
+     if(manual?.start){
+       const ms=startWork(manual.start); if(ms>earliest)earliest=ms;
+     }
+     if(manual?.start&&manual?.end){
+       const ms=startWork(manual.start), me=parseDate(manual.end);
+       if(me&&me>ms){
+         chosen={stall:procRow[1][0],start:ms,end:me,hours:(me-ms)/3600000,manual:true};
+       }
+     }
+     if(!chosen){
+       let best=null;
+       for(const f of frees){
+         const ss=f.free&&f.free>earliest?f.free:earliest;
+         if(!best||ss<best.start)best={stall:f.stall,start:ss};
+       }
+       const en=workAdd(best.start,hrs); chosen={stall:best.stall,start:best.start,end:en,hours:hrs,manual:false};
+     }
+     // reserve chosen stall; manual plan reserves first stall by default unless user later maps stall.
+     const f=frees.find(z=>z.stall===chosen.stall); if(f)f.free=chosen.end;
+     jobsByUnit.get(key).push(Object.assign({process:proc},chosen,{start:chosen.start.toISOString(),end:chosen.end.toISOString()}));
+     upstreamEnd.set(key,chosen.end);
+   }
+ }
+ const plan=[];
+ prioritized.forEach((u,i)=>{
+   const key=decisionKey(u), nu=unitMap.get(key), jobs=jobsByUnit.get(key)||[];
+   // Keep only jobs from current process onward.
+   const pf=jobs.length?jobs[jobs.length-1].end:new Date(upstreamEnd.get(key)||u._baseFinish).toISOString();
+   const deadline=parseDate(nu.janjiSelesai), slack=deadline?(deadline-new Date(pf))/3600000:null;
+   const approvedProcesses=PROC.map(p=>p[0]).filter(p=>processDecisions[key+'|'+p]?.status==='APPROVED');
+   const atRisk=slack!=null&&slack<0;
+   const tight=slack!=null&&slack>=0&&slack<=4;
+   const rec=atRisk?'🔴 TIDAK FEASIBLE — plan melewati JANJI SELESAI':tight?'🟠 TIGHT — slack ≤ 4 jam':'🟢 REKOMENDASI SISTEM';
+   plan.push(Object.assign({},nu,{rank:i+1,currentProcess:nu._cur,approvalProcess:approvalProcessForUnit(nu),jobs,fullJobs:fullJobsByUnit.get(key)||[],planFinish:pf,slackHours:slack,atRisk,recommendation:rec,approvedProcesses}));
+ });
+ // Re-rank by actual calculated slack after capacity scheduling.
+ plan.sort((a,b)=>{const sa=a.slackHours==null?Infinity:a.slackHours,sb=b.slackHours==null?Infinity:b.slackHours;if(sa!==sb)return sa-sb;const da=parseDate(a.janjiSelesai),db=parseDate(b.janjiSelesai);return(da?.getTime()||Infinity)-(db?.getTime()||Infinity)});plan.forEach((x,i)=>x.rank=i+1);
+ return plan;
+}
+function makePlan(rows){return rebuildAllPlans(rows)}
+function callbackLoad(res){
+ if(!res||!res.success){
+   const st=document.getElementById('status');
+   if(st)st.textContent='DATABASE ERROR: '+((res&&res.error)||(res&&res.message)||'response tidak valid');
+   return;
+ }
+ let rows=Array.isArray(res.data)?res.data:[];
+ rows=rows.map(u=>Object.assign({},u,{category:modeOf(u),kerusakan:u.kerusakan||u.KERUSAKAN||'',janjiSelesai:u.janjiSelesai||u.JANJI_SELESAI||u['JANJI SELESAI']||u.janji||'',leadtime:u.leadtime||{}}));
+ const plan=makePlan(rows);
+ applySavedDecisions(plan);
+ DATA={success:true,totalUnits:rows.length,plan,actual:rows,raw:rows};
+ const st=document.getElementById('status');
+ if(st)st.textContent='DATABASE UNIT + LEADTIME — '+rows.length+' unit | DATA JSCB SIAP';
+ renderMonthPlan();
+ requestAnimationFrame(()=>renderMonthPlan());
+ setTimeout(()=>renderMonthPlan(),100);
+}
+function load(){
+ const root=document.getElementById('monthPlanScroll');
+ const status=document.getElementById('status');
+ if(status)status.textContent='Membaca DATABASE UNIT + DATABASE LEADTIME…';
+ if(root && !DATA)root.innerHTML='<div style="padding:25px;text-align:center;font-weight:800">MEMUAT DATABASE...</div>';
+ const cb='jscb_cb_'+Date.now();
+ let finished=false;
+ const finish=()=>{if(finished)return;finished=true;try{delete window[cb]}catch(e){}const old=document.getElementById(cb);if(old)old.remove()};
+ window[cb]=function(r){try{callbackLoad(r);if(DATA)renderMonthPlan()}catch(e){if(status)status.textContent='ERROR RENDER: '+e.message}finally{finish()}};
+ const script=document.createElement('script');script.id=cb;script.async=true;
+ script.src=API+'?action=jscb&callback='+encodeURIComponent(cb)+'&_='+Date.now();
+ script.onerror=()=>{if(status)status.textContent='GAGAL KONEKSI API — cek deployment Apps Script';if(root&&!DATA)root.innerHTML='<div style="padding:25px;text-align:center;font-weight:800;color:#a00000">GAGAL MEMBACA DATABASE</div>';finish()};
+ document.body.appendChild(script);
+ setTimeout(()=>{if(!finished){if(status)status.textContent='TIMEOUT API — coba REFRESH DATABASE';if(root&&!DATA)root.innerHTML='<div style="padding:25px;text-align:center;font-weight:800;color:#a00000">TIMEOUT MEMBACA DATABASE</div>';finish()}},20000);
+}
+function boardOf(x){
+ const kategori=String(x.kategori??x.KATEGORI??x.categoryName??'').trim().toUpperCase();
+ const cabang=String(x.cabang??x.CABANG??'').trim().toUpperCase();
+ if(cabang==='GRAB')return 'GRAB';
+ if(kategori==='RJ')return 'RAWAT JALAN';
+ return 'REGULER';
+}
+function visible(){
+ if(!DATA)return[];
+ return DATA.plan.filter(x=>{
+   const boardOk=boardOf(x)===boardType;
+   const groupOk=filter==='ALL'||String(x.group||'').trim().toUpperCase()===filter;
+   return boardOk&&groupOk;
+ });
+}
+function setBoardType(t){
+ boardType=t;
+ document.querySelectorAll('.monthBoardTab').forEach(b=>b.classList.toggle('active',b.dataset.board===t));
+ setFilter('ALL');
+}
+
+function renderAll(){renderSummary();renderPlan();renderJpcb();renderProcessControl();if(document.getElementById('MONTHPLAN')?.style.display==='block')renderMonthPlan()}
+function renderSummary(){let a=visible(),risk=a.filter(x=>x.atRisk).length;document.getElementById('summary').innerHTML=[['TOTAL PLAN',a.length],['PRIORITAS 1–8',Math.min(8,a.length)],['BERISIKO',risk],['ATU 1',a.filter(x=>String(x.group).toUpperCase()==='ATU 1').length],['ATU 2',a.filter(x=>String(x.group).toUpperCase()==='ATU 2').length]].map(x=>`<div class="kpi"><b>${x[0]}</b><strong>${x[1]}</strong></div>`).join('')}
+function renderPlan(){const a=visible();document.getElementById('planBody').innerHTML=a.map(x=>`<tr class="${x.atRisk?'riskrow':''}" onclick="detail('${esc(x.nopkb)}')"><td><b>${x.rank}</b></td><td><b>${esc(x.nopol)}</b></td><td>${esc(x.nopkb)}</td><td>${esc(x.group)}</td><td>${esc(x.kerusakan)}</td><td>${esc(x.progress)}</td><td><b>${esc(x.approvalProcess||'-')}</b></td><td>${dt(x.janjiSelesai)}</td><td>${dt(x.planFinish)}</td><td class="${x.slackHours<0?'danger':''}">${hours(x.slackHours)}</td><td>${x.atRisk?'<span class="badge riskbadge">TIDAK FEASIBLE</span>':x.slackHours<=4?'<span class="badge" style="background:#fff0c2;color:#765500">TIGHT</span>':'<span class="badge okbadge">MASIH AMAN</span>'}</td><td>${esc(x.recommendation)}${x._nextDayPriority&&x._nextDayPriority<9999?' <span class="badge" style="background:#e8f0ff;color:#0b3f78">PRIORITAS 16/09 #'+x._nextDayPriority+'</span>':''}</td></tr>`).join('')||'<tr><td colspan="12">Tidak ada unit</td></tr>';document.getElementById('planRows').innerHTML=a.slice(0,20).map(x=>{const d=decisions[decisionKey(x)];const state=d?.status==='APPROVED'?'<span class="decisionState" style="color:#176117">✓ APPROVED</span>':d?.status==='CHANGED'?'<span class="decisionState" style="color:#8a6500">✎ DIUBAH</span>':'<span class="decisionState">BELUM DIPUTUSKAN</span>';return `<div class="planrow"><b>#${x.rank}</b><b>${esc(x.nopol)}</b><span>${esc(x.currentProcess)}</span><span>${dt(x.planFinish)}</span><span>${x.atRisk?'<b class="danger">JANJI TERLEWAT</b>':x.slackHours<=4?'<b style="color:#8a6500">SLACK TIPIS</b>':'Rekomendasi sistem'}</span><span>${state}</span><span class="decisionBtns"><button class="btnApprove" onclick="event.stopPropagation();controllerApprove('${esc(x.nopkb)}')">✓ APPROVE UNIT</button><button class="btnChange" onclick="event.stopPropagation();controllerChange('${esc(x.nopkb)}')">✎ ATUR PLAN</button></span></div>`}).join('')}
+function decisionKey(x){return String(x.nopol||'')+'|'+String(x.nopkb||'')}
+function saveDecisions(){try{localStorage.setItem(DECISION_KEY,JSON.stringify(decisions));localStorage.setItem(PROCESS_DECISION_KEY,JSON.stringify(processDecisions));localStorage.setItem(PROCESS_ORDER_KEY,JSON.stringify(processOrders))}catch(e){}}
+function applySavedDecisions(plan){plan.forEach(x=>{const d=decisions[decisionKey(x)];if(!d)return;if(d.status==='APPROVED')x.recommendation='✓ Controller APPROVED';else if(d.status==='CHANGED')x.recommendation='✎ Controller mengubah plan';})}
+function rerunPlans(){if(!DATA)return;const rows=DATA.raw||DATA.actual||[];const plan=makePlan(rows);applySavedDecisions(plan);DATA.plan=plan;renderAll();renderProcessControl()}
+function controllerApprove(pkb){if(!DATA)return;const x=DATA.plan.find(z=>String(z.nopkb)===String(pkb));if(!x)return;decisions[decisionKey(x)]={status:'APPROVED',at:new Date().toISOString()};saveDecisions();x.recommendation='✓ Controller APPROVED';renderAll();renderProcessControl();document.getElementById('status').textContent='Controller APPROVE: '+x.nopol+' | tersimpan di browser';}
+function controllerChange(pkb){openUnitPlanner(pkb)}
+function processStatus(x,proc){const d=processDecisions[decisionKey(x)+'|'+proc];return d?.status||'PENDING'}
+function formatInputDate(v){const d=parseDate(v);if(!d)return'';const z=new Date(d);z.setSeconds(0,0);return z.getFullYear()+'-'+String(z.getMonth()+1).padStart(2,'0')+'-'+String(z.getDate()).padStart(2,'0')+'T'+String(z.getHours()).padStart(2,'0')+':'+String(z.getMinutes()).padStart(2,'0')}
+function processUnitList(proc){
+ const units=visible().filter(x=>x.approvalProcess===proc);
+ return orderForProcess(proc,units);
+}
+function renderProcessTabs(){document.getElementById('processTabs').innerHTML=PROC.map(p=>`<button class="${selectedProcess===p[0]?'sel':''}" onclick="selectProcess('${esc(p[0])}')">${esc(p[0])}</button>`).join('')}
+function selectProcess(p){selectedProcess=p;renderProcessControl()}
+function moveProcessUnit(proc,key,dir){
+ const list=processUnitList(proc).map(x=>decisionKey(x));let i=list.indexOf(key);if(i<0)return;const j=i+dir;if(j<0||j>=list.length)return;[list[i],list[j]]=[list[j],list[i]];processOrders[proc]=list;saveDecisions();rerunPlans();selectedProcess=proc;renderProcessControl();}
+function renderProcessControl(){
+ const tabs=document.getElementById('processTabs'), q=document.getElementById('processQueue'), st=document.getElementById('processControlStatus');if(!tabs||!q)return;
+ renderProcessTabs();const proc=selectedProcess, units=processUnitList(proc);
+ if(!units.length){q.innerHTML='<div class="processControlEmpty">Tidak ada unit yang masuk proses ini berdasarkan DATABASE UNIT + DATABASE LEADTIME.</div>';st.innerHTML='<b>'+esc(proc)+'</b> — tidak ada rekomendasi unit.';return}
+ q.innerHTML=units.map((x,i)=>{const job=(x.jobs||[]).find(j=>j.process===proc), d=processDecisions[decisionKey(x)+'|'+proc], status=d?.status==='APPROVED'?'✓ APPROVED':d?.status==='CHANGED'?'✎ DIUBAH':'PENDING';const cls=x.slackHours<0?'risk':x.slackHours<=4?'tight':'ok';return `<div class="pqrow" draggable="true" data-key="${esc(decisionKey(x))}" ondragstart="dragStart(event,'${esc(proc)}','${esc(decisionKey(x))}')" ondragover="event.preventDefault()" ondrop="dropUnit(event,'${esc(proc)}','${esc(decisionKey(x))}')"><div class="dragHandle">☰</div><b>#${i+1} ${esc(x.nopol)}</b><span>${esc(x.group)}</span><span>${job?dt(job.start)+' → '+dt(job.end):'-'}</span><span>Janji ${dt(x.janjiSelesai)}</span><span class="pqStatus ${cls}">${status} · ${x.slackHours==null?'-':hours(x.slackHours)}</span><span class="pqActions"><button class="approveMini miniBtn" onclick="approveProcess('${esc(x.nopkb)}','${esc(proc)}')">✓</button><button class="changeMini miniBtn" onclick="editProcess('${esc(x.nopkb)}','${esc(proc)}')">✎ PLAN</button><button class="miniBtn" onclick="moveProcessUnit('${esc(proc)}','${esc(decisionKey(x))}',-1)">▲</button><button class="miniBtn" onclick="moveProcessUnit('${esc(proc)}','${esc(decisionKey(x))}',1)">▼</button></span></div>`}).join('');
+ st.innerHTML='<b>'+esc(proc)+'</b> — '+units.length+' unit yang menjadikan proses ini sebagai <b>NEXT PROCESS</b>. <b>Drag/geser</b> untuk mengubah prioritas NEXT PROCESS; future plan dihitung ulang setelah keputusan. <b>Janji selesai tetap menjadi hard constraint.</b>';
+}
+function dragStart(e,proc,key){e.dataTransfer.setData('text/plain',JSON.stringify({proc,key}))}
+function dropUnit(e,proc,targetKey){try{const d=JSON.parse(e.dataTransfer.getData('text/plain'));if(d.proc!==proc)return;const list=processUnitList(proc).map(x=>decisionKey(x));const from=list.indexOf(d.key),to=list.indexOf(targetKey);if(from<0||to<0||from===to)return;list.splice(from,1);list.splice(to,0,d.key);processOrders[proc]=list;saveDecisions();rerunPlans();selectedProcess=proc;renderProcessControl()}catch(err){}}
+function approveProcess(pkb,proc){if(!DATA)return;const x=DATA.plan.find(z=>String(z.nopkb)===String(pkb));if(!x)return;const job=(x.jobs||[]).find(j=>j.process===proc);if(!job)return;processDecisions[decisionKey(x)+'|'+proc]={status:'APPROVED',start:job.start,end:job.end,at:new Date().toISOString()};saveDecisions();rerunPlans();selectedProcess=proc;renderProcessControl();}
+function editProcess(pkb,proc){openProcessEditor(pkb,proc)}
+function openUnitPlanner(pkb){
+ const x=DATA?.plan?.find(z=>String(z.nopkb)===String(pkb));if(!x)return;
+ const key=decisionKey(x), approval=x.approvalProcess||'';
+ document.getElementById('mh').textContent=x.nopol+' — CONTROLLER PLANNER';
+ const curIdx=PROC.findIndex(p=>p[0]===approval);
+ const rows=(x.fullJobs||[]).map((j,ji)=>{
+   const d=processDecisions[key+'|'+j.process];
+   const pi=PROC.findIndex(p=>p[0]===j.process);
+   const isApproval=j.process===approval;
+   const isHistorical=curIdx>=0 && pi<curIdx;
+   const isCurrent=curIdx>=0 && pi===curIdx-1;
+   const isFuture=curIdx>=0 && pi>curIdx;
+   const label=isHistorical?'HISTORICAL PLAN':isApproval?'NEXT — APPROVAL':isCurrent?'CURRENT PROCESS':'FUTURE PLAN';
+   const st=d?.status==='APPROVED'?'✓ APPROVED':d?.status==='CHANGED'?'✎ DIUBAH':label;
+   const cls=isApproval?'changeMini':'';
+   const actions=isApproval?`<div class="modalProcessActions"><button class="approveMini" onclick="approveProcess('${esc(x.nopkb)}','${esc(j.process)}');closeM()">✓ APPROVE</button><button class="changeMini" onclick="editProcess('${esc(x.nopkb)}','${esc(j.process)}')">✎ ATUR START/FINISH</button></div>`:isHistorical?'<div class="decisionNote">Plan proses sebelumnya tetap ditampilkan sebagai riwayat plan. Tidak meminta approval ulang.</div>':isCurrent?'<div class="decisionNote">Ini proses yang sedang berjalan. Actual menjadi acuan untuk re-plan berikutnya.</div>':'<div class="decisionNote">Future/system plan. Belum membutuhkan approval controller.</div>';
+   return `<div class="modalProcessRow ${isHistorical?'historicalPlan':isApproval?'nextApproval':isCurrent?'currentPlan':'futurePlan'}"><div class="modalProcessHead"><b>${esc(j.process)}</b><span class="${cls}">${st}</span></div><p>${esc(j.stall)} — ${dt(j.start)} → ${dt(j.end)} — ${j.hours.toFixed(1)} jam</p>${actions}</div>`;
+ }).join('');
+ document.getElementById('mb').innerHTML=`<p><b>No PKB:</b> ${esc(x.nopkb)} &nbsp; <b>Kerusakan:</b> ${esc(x.kerusakan)} &nbsp; <b>Janji:</b> ${dt(x.janjiSelesai)}</p><p><b>PROGRESS SAAT INI:</b> ${esc(x.progress)} &nbsp; → &nbsp; <b>NEXT PROCESS APPROVAL:</b> <span style="color:#0b3f78;font-weight:900">${esc(approval||'-')}</span></p><p><b>Plan Finish (current/future):</b> ${dt(x.planFinish)} &nbsp; <b>Slack:</b> <span class="${x.slackHours<0?'danger':''}">${hours(x.slackHours)}</span></p><h4>FULL PLAN — HISTORICAL + CURRENT + NEXT APPROVAL + FUTURE</h4><div class="decisionNote">Plan proses yang sudah lewat tetap tampil berdasarkan plan awal unit. Proses saat ini ditampilkan sebagai CURRENT. Hanya NEXT PROCESS yang meminta keputusan controller. Future process tetap menjadi rekomendasi sistem.</div>${rows||'<div class="processControlEmpty">Full plan belum tersedia untuk unit ini karena belum memiliki titik awal PLAN yang valid.</div>'}<hr><b>${x.atRisk?'⚠ TIDAK FEASIBLE — JANJI SELESAI TERLEWAT':'✓ PLAN MASIH DALAM TARGET'}</b>`;
+ document.getElementById('modal').style.display='flex';
+}
+function localInputValue(v){const d=parseDate(v);if(!d)return '';const pad=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())}
+function openProcessEditor(pkb,proc){
+ const x=DATA?.plan?.find(z=>String(z.nopkb)===String(pkb)); if(!x)return;
+ const job=(x.jobs||[]).find(j=>j.process===proc); if(!job){alert('Plan proses tidak ditemukan.');return;}
+ document.getElementById('mh').textContent=x.nopol+' — ATUR PLAN '+proc;
+ const startVal=localInputValue(job.start), endVal=localInputValue(job.end);
+ document.getElementById('mb').innerHTML=`<p><b>No PKB:</b> ${esc(x.nopkb)} &nbsp; <b>Kerusakan:</b> ${esc(x.kerusakan)}</p><p><b>Progress saat ini:</b> ${esc(x.progress)} &nbsp; <b>Next Process:</b> <span style="color:#0b3f78;font-weight:900">${esc(proc)}</span></p><p><b>Janji selesai:</b> ${dt(x.janjiSelesai)}</p><div class="manualBox"><b>ATUR START / FINISH NEXT PROCESS</b><div class="processDetail"><div class="pd"><label>START</label><input type="datetime-local" id="${inputId(proc,'ms')}" value="${startVal}"></div><div class="pd"><label>FINISH</label><input type="datetime-local" id="${inputId(proc,'me')}" value="${endVal}"></div></div><div class="decisionNote">Durasi standar ${Number(DUR[modeOf(x)]?.[proc]||0).toFixed(1)} jam. Sistem akan memeriksa jam kerja, hari Minggu, kapasitas, dan JANJI SELESAI sebelum menyimpan.</div><div class="modalProcessActions"><button class="approveMini" onclick="saveManualProcess('${esc(x.nopkb)}','${esc(proc)}',false)">✓ SIMPAN / APPROVE</button><button class="changeMini" onclick="saveManualProcess('${esc(x.nopkb)}','${esc(proc)}',true)">✎ SIMPAN PERUBAHAN</button></div></div><div class="decisionNote">Setelah disimpan, proses setelah ${esc(proc)} akan dihitung ulang otomatis.</div>`;
+ document.getElementById('modal').style.display='flex';
+}
+function inputId(proc,prefix){return prefix+'_'+String(proc).replace(/[^A-Z0-9]/gi,'_')}
+function saveManualProcess(pkb,proc,changed){
+ const x=DATA?.plan?.find(z=>String(z.nopkb)===String(pkb));if(!x)return;const sv=document.getElementById(inputId(proc,'ms'))?.value,ev=document.getElementById(inputId(proc,'me'))?.value;if(!sv||!ev){alert('START dan FINISH wajib diisi.');return}const st=parseDate(sv),en=parseDate(ev);if(!st||!en||en<=st){alert('START/FINISH tidak valid.');return}
+ const standard=Number(DUR[modeOf(x)]?.[proc]||0),actualHours=(en-st)/3600000;if(actualHours+0.001<standard){alert('Durasi terlalu pendek. Kebutuhan proses '+standard+' jam, input hanya '+actualHours.toFixed(1)+' jam.');return}
+ const dl=parseDate(x.janjiSelesai);if(proc==='FINAL INSPECTION'&&dl&&en>dl){alert('Plan FINAL INSPECTION melewati JANJI SELESAI. Controller tidak boleh menyimpan plan yang melanggar target.');return}
+ const k=decisionKey(x)+'|'+proc, old=processDecisions[k]; processDecisions[k]={status:changed?'CHANGED':'APPROVED',start:st.toISOString(),end:en.toISOString(),at:new Date().toISOString()}; rerunPlans(); const nx=DATA.plan.find(z=>decisionKey(z)===decisionKey(x)), nd=parseDate(nx?.janjiSelesai), nf=parseDate(nx?.planFinish); if(nd&&nf&&nf>nd){if(old)processDecisions[k]=old;else delete processDecisions[k];rerunPlans();alert('Plan ditolak: perubahan ini membuat FINAL INSPECTION melewati JANJI SELESAI. Silakan pilih slot lebih awal atau ubah urutan proses.');return;} saveDecisions();closeM();selectedProcess=proc;renderProcessControl();document.getElementById('status').textContent=(changed?'Controller UBAH PLAN: ':'Controller APPROVE: ')+x.nopol+' / '+proc+' | tersimpan di browser';
+}
+// ===== CONTROLLER STALL SNAPSHOT FOR TOMORROW =====
+// 15/09/2026: posisi fisik unit di stall menjadi PLAN + ACTUAL pada proses tersebut.
+// Setelah proses aktual hari ini, target proses berikutnya tetap dihitung otomatis oleh sistem.
+const TOMORROW_STALL_DATE='2026-09-15';
+// Prioritas planning untuk hari berikutnya (16/09/2026), sesuai urutan controller.
+const NEXT_DAY_PRIORITY_DATE='2026-09-16';
+const NEXT_DAY_PRIORITY=['B 1372 DZJ','B 1953 SYV','B 1640 JKT','B 2536 WFI','B 1621 DQ','B 1460 HKB','B 1439 DFG','B 1731 DOG','B 1448 DOE','B 1493 DOG','B 1724 DOD'];
+const NEXT_DAY_PRIORITY_MAP=new Map(NEXT_DAY_PRIORITY.map((n,i)=>[String(n).trim().toUpperCase(),i+1]));
+function nextDayPriority(u){return NEXT_DAY_PRIORITY_MAP.get(String(u.nopol||'').trim().toUpperCase())||9999}
+const TOMORROW_STALL_UNITS={
+ 'B 1372 DZJ':{stall:8,process:'PAINTING',label:'T.CAT',current:'WAITING PAINTING',next:'PAINTING'},
+ 'B 1953 SYV':{stall:8,process:'PAINTING',label:'T.CAT',current:'WAITING PAINTING',next:'PAINTING'},
+ 'B 1640 JKT':{stall:8,process:'PAINTING',label:'T.CAT',current:'WAITING PAINTING',next:'PAINTING'},
+ 'B 2536 WFI':{stall:1,process:'PANEL REPAIR',label:'KETOK',current:'PANEL REPAIR',next:'PUTTY'},
+ 'B 1621 DQ':{stall:2,process:'PANEL REPAIR',label:'KETOK',current:'PANEL REPAIR',next:'PUTTY'},
+ 'B 1460 HKB':{stall:3,process:'PANEL REPAIR',label:'KETOK',current:'PANEL REPAIR',next:'PUTTY'},
+ 'B 1439 DFG':{stall:4,process:'PANEL REPAIR',label:'KETOK',current:'PANEL REPAIR',next:'PUTTY'},
+ 'B 1731 DOG':{stall:4,process:'PUTTY',label:'DEMPUL',current:'PUTTY',next:'SURFACER'},
+ 'B 1448 DOE':{stall:5,process:'PUTTY',label:'DEMPUL',current:'PUTTY',next:'SURFACER'},
+ 'B 1493 DOG':{stall:6,process:'PUTTY',label:'DEMPUL',current:'PUTTY',next:'SURFACER'},
+ 'B 1724 DOD':{stall:7,process:'PUTTY',label:'DEMPUL',current:'PUTTY',next:'SURFACER'}
+};
+function tomorrowOverrideFor(u){const key=String(u.nopol||'').trim().toUpperCase();return TOMORROW_STALL_UNITS[key]||null}
+function isTomorrowBoard(){return dayKey(boardDate)===TOMORROW_STALL_DATE}
+function renderNowLine(){
+ const el=document.getElementById('nowLine'), lab=document.getElementById('nowLineLabel');
+ if(!el)return;
+ const now=new Date();
+ if(dayKey(boardDate)!==dayKey(now) || now.getHours()+now.getMinutes()/60<8 || now.getHours()+now.getMinutes()/60>16.5){el.style.display='none';return;}
+ const h=now.getHours()+now.getMinutes()/60;
+ const pct=Math.max(0,Math.min(100,((h-8)/9)*100));
+ el.style.left=pct+'%';el.style.display='block';
+ lab.textContent='NOW '+now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+}
+function snapshotActualStart(u,proc,planJob){
+ const a=ACT.find(z=>z[0]===proc);
+ let st=a?parseDate(u.leadtime?.[a[1]]):null;
+ if(!st && planJob) st=parseDate(planJob.start);
+ return st;
+}
+function renderJpcb(){
+ if(!DATA)return;
+ document.getElementById('groupLabel').textContent=(filter==='ALL'?'ALL GROUP':filter);
+ document.getElementById('today').textContent=boardDate.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'});
+ document.getElementById('stallList').innerHTML=stalls.map((x,i)=>`<div class="stall"><div class="no">${i+1}</div><div class="sn">${x}</div></div>`).join('');
+ let rows=Array.from({length:11},()=>[]);
+ let ds=new Date(boardDate);ds.setHours(8,0,0,0);
+ let de=new Date(boardDate);de.setHours(17,0,0,0);
+ const overrides=isTomorrowBoard();
+ const overriddenKeys=new Set();
+ // The controller's physical stall snapshot is used only for PROCESS/STALL identity.
+ // Timing remains real: PLAN uses the system plan duration; ACTUAL runs from its real STR timestamp to the current time.
+ if(overrides){
+   Object.entries(TOMORROW_STALL_UNITS).forEach(([nopol,ov])=>{
+     const u=visible().find(x=>String(x.nopol||'').trim().toUpperCase()===nopol);
+     if(!u)return;
+     const key=decisionKey(u);
+     overriddenKeys.add(key+'|'+ov.process);
+     const pj=(u.jobs||[]).find(j=>j.process===ov.process);
+     // PLAN: use the normal system-generated process plan, but place it on the physical stall supplied by controller.
+     if(pj){
+       let st=parseDate(pj.start),en=parseDate(pj.end);
+       if(st&&en&&en>ds&&st<de){
+         const vs=st<ds?ds:st,ve=en>de?de:en;
+         const l=Math.max(0,Math.min(100,((vs.getHours()+vs.getMinutes()/60)-8)/9*100));
+         const r=Math.max(0,Math.min(100,((ve.getHours()+ve.getMinutes()/60)-8)/9*100));
+         rows[ov.stall-1].push(`<span class="lab lp">P</span><div class="bar plan" style="left:${l}%;width:${Math.max(2,r-l)}%">${esc(u.nopol)} · ${esc(ov.process)}</div>`);
+       }
+     }
+     // ACTUAL: show only the elapsed portion of the real active process. Never stretch it to 08:00–16:00.
+     const ast=snapshotActualStart(u,ov.process,pj);
+     if(ast){
+       const now=new Date();
+       const end=(dayKey(boardDate)===dayKey(now))?now:(parseDate(u.leadtime?.[ACT.find(z=>z[0]===ov.process)?.[2]])||now);
+       if(ast<de&&end>ds&&end>ast){
+         const vs=ast<ds?ds:ast,ve=end>de?de:end;
+         const l=Math.max(0,Math.min(100,((vs.getHours()+vs.getMinutes()/60)-8)/9*100));
+         const r=Math.max(0,Math.min(100,((ve.getHours()+ve.getMinutes()/60)-8)/9*100));
+         if(r>l) rows[ov.stall-1].push(`<span class="lab la">A</span><div class="bar actual ${u.atRisk?'risk':''}" style="left:${l}%;width:${Math.max(2,r-l)}%;top:55%">${esc(u.nopol)} · ${esc(ov.process)}</div>`);
+       }
+     }
+   });
+ }
+ // Normal PLAN bars. Snapshot rows are skipped only for the same process/stall identity, not for the rest of the unit's plan.
+ visible().forEach(u=>(u.jobs||[]).forEach(j=>{
+   if(overrides&&overriddenKeys.has(decisionKey(u)+'|'+j.process))return;
+   let st=parseDate(j.start),en=parseDate(j.end);if(!st||!en||en<=ds||st>=de)return;
+   let vs=st<ds?ds:st,ve=en>de?de:en;
+   let l=Math.max(0,Math.min(100,((vs.getHours()+vs.getMinutes()/60)-8)/9*100)),r=Math.max(0,Math.min(100,((ve.getHours()+ve.getMinutes()/60)-8)/9*100));
+   let n=Number(j.stall);if(n>=1&&n<=11)rows[n-1].push(`<span class="lab lp">P</span><div class="bar plan" style="left:${l}%;width:${Math.max(2,r-l)}%">${esc(u.nopol)}</div>`);
+ }));
+ // ACTUAL bars from real LEADTIME STR/STP. For active processes, end at NOW so the bar follows the current clock.
+ visible().forEach(u=>{
+   const a=ACT.find(z=>u.leadtime[z[1]]&&!u.leadtime[z[2]]);if(!a)return;
+   if(overrides&&Array.from(overriddenKeys).some(k=>k.startsWith(decisionKey(u)+'|')&&k.endsWith('|'+a[0])))return;
+   let st=parseDate(u.leadtime[a[1]]);if(!st)return;
+   const now=new Date();let en=(dayKey(boardDate)===dayKey(now))?now:parseDate(u.leadtime[a[2]])||now;
+   if(!en||st>=de||en<=ds||en<=st)return;
+   const pj=(u.jobs||[]).find(j=>j.process===a[0]);if(!pj)return;
+   let n=Number(pj.stall),vs=st<ds?ds:st,ve=en>de?de:en;if(n<1||n>11)return;
+   let l=Math.max(0,((vs.getHours()+vs.getMinutes()/60)-8)/9*100),r=Math.min(100,((ve.getHours()+ve.getMinutes()/60)-8)/9*100);
+   if(r>l)rows[n-1].push(`<span class="lab la">A</span><div class="bar actual ${u.atRisk?'risk':''}" style="left:${Math.max(0,l)}%;width:${Math.max(2,r-l)}%">${esc(u.nopol)}</div>`);
+ });
+ document.getElementById('timelineRows').innerHTML=rows.map(x=>`<div class="tr">${x.join('')}</div>`).join('');
+ renderNowLine();
+ document.getElementById('queue').innerHTML=visible().slice(0,12).map(x=>`<tr class="${x.atRisk?'riskrow':''}"><td>${x.rank}</td><td><b>${esc(x.nopol)}</b></td><td>${overrides&&tomorrowOverrideFor(x)?esc(tomorrowOverrideFor(x).next):esc(x.currentProcess)}</td><td>${dt(x.janjiSelesai)}</td></tr>`).join('');
+ const labels=['Body Repair','Putty','Surfacer','Masking','Spraying','Polishing','Re-Assy'],map={'Body Repair':'PANEL REPAIR','Putty':'PUTTY','Surfacer':'SURFACER','Masking':'PAINTING','Spraying':'PAINTING','Polishing':'POLISHING','Re-Assy':'RE-ASSEMBLY'};
+ document.getElementById('waiting').innerHTML=labels.map(x=>{let q=visible().filter(u=>String(u.currentProcess).toUpperCase()===map[x]).slice(0,5);return `<tr><td>${x}</td>${[0,1,2,3,4].map(i=>`<td>${q[i]?`<b>${esc(q[i].nopol)}</b>`:''}</td>`).join('')}</tr>`}).join('');
+ document.getElementById('stop').textContent=visible().filter(x=>normProgress(x.progress).includes('JOB STOPPED')).map(x=>x.nopol).join(', ')||'Tidak ada.';
+ document.getElementById('note').innerHTML=overrides?`<b>15/09/2026:</b> PLAN mengikuti proses/stall aktual yang ditentukan untuk tanggal 15/09/2026. TARGET PROCESS menggunakan mapping sistem: WAITING PAINTING → PAINTING, PANEL REPAIR/KETOK → PUTTY, PUTTY/DEMPUL → SURFACER. ACTUAL mengikuti waktu proses yang berlangsung sampai jam sekarang. Garis merah menunjukkan waktu berjalan.`:`<b>HASIL HARI SEBELUMNYA:</b> Gunakan hasil ACTUAL kemarin untuk menentukan prioritas hari ini. <br><b>PLAN HARI INI:</b> rekomendasi sistem; controller tetap memutuskan.`;
+}
+
+function detail(pkb){let x=(DATA.plan||[]).find(z=>z.nopkb===pkb);if(!x)return;document.getElementById('mh').textContent=x.nopol+' — PLAN';document.getElementById('mb').innerHTML=`<p><b>No PKB:</b> ${esc(x.nopkb)}</p><p><b>Kerusakan:</b> ${esc(x.kerusakan)}</p><p><b>Janji selesai:</b> ${dt(x.janjiSelesai)}</p><p><b>PROGRESS DATABASE:</b> ${esc(x.progress)}</p><p><b>PLAN DIMULAI DARI:</b> ${esc(x.currentProcess)}</p><p><b>Plan Finish:</b> ${dt(x.planFinish)}</p><p><b>Slack:</b> <span class="${x.slackHours<0?'danger':''}">${hours(x.slackHours)}</span></p><h4>Rencana per proses</h4>${x.jobs.map(j=>{const d=processDecisions[decisionKey(x)+'|'+j.process];return `<div class="modalProcessRow"><div class="modalProcessHead"><b>${esc(j.process)}</b><span>${d?.status==='APPROVED'?'✓ APPROVED':d?.status==='CHANGED'?'✎ DIUBAH':'PENDING'}</span></div><p>${esc(j.stall)} — ${dt(j.start)} → ${dt(j.end)} — ${j.hours.toFixed(1)} jam</p><div class="modalProcessActions"><button class="approveMini" onclick="approveProcess('${esc(x.nopkb)}','${esc(j.process)}');closeM()">✓ APPROVE</button><button class="changeMini" onclick="editProcess('${esc(x.nopkb)}','${esc(j.process)}')">✎ ATUR START/FINISH</button></div></div>`}).join('')}<hr><b>${x.atRisk?'⚠ TIDAK FEASIBLE — JANJI SELESAI TERLEWAT':'✓ PLAN MASIH DALAM TARGET'}</b>`;document.getElementById('modal').style.display='flex'}
+function closeM(){document.getElementById('modal').style.display='none'}
+function setFilter(f){
+ filter=f;
+ ['ALL','ATU 1','ATU 2'].forEach(g=>{const id=g==='ALL'?'groupAllBtn':g==='ATU 1'?'group1Btn':'group2Btn';const b=document.getElementById(id);if(b)b.classList.toggle('active',g===f)});
+ renderMonthPlan();
+}
+
+/* ===== MONTHLY JSCB PLAN VIEW ===== */
+let monthPlanDate=new Date();monthPlanDate.setDate(1);monthPlanDate.setHours(0,0,0,0);
+function monthPlanPrev(){monthPlanDate.setMonth(monthPlanDate.getMonth()-1);renderMonthPlan()}
+function monthPlanNext(){monthPlanDate.setMonth(monthPlanDate.getMonth()+1);renderMonthPlan()}
+function monthPlanToday(){monthPlanDate=new Date();monthPlanDate.setDate(1);monthPlanDate.setHours(0,0,0,0);renderMonthPlan()}
+function monthPlanClass(proc){return {'PANEL REPAIR':'planBody','PUTTY':'planPutty','SURFACER':'planSurf','PAINTING':'planPaint','POLISHING':'planPolish','RE-ASSEMBLY':'planReassy','WASHING':'planWash','FINISHING':'planFinish','FINAL INSPECTION':'planFinal'}[proc]||'planBody'}
+function monthPlanTimePct(d){let h=d.getHours()+d.getMinutes()/60+d.getSeconds()/3600;return Math.max(0,Math.min(100,((h-8)/8.5)*100))}
+function renderMonthPlan(){
+ const root=document.getElementById('monthPlanScroll');
+ if(!root)return;
+ // Jangan pernah menghapus kalender hanya karena render dipanggil sebelum callback API selesai.
+ // Data akan dirender ulang setelah callbackLoad memasang DATA.
+ if(!DATA){
+   if(!root.dataset.hasRendered) root.innerHTML='<div style="padding:25px;text-align:center;font-weight:800">Menunggu DATABASE...</div>';
+   return;
+ }
+ const y=monthPlanDate.getFullYear(),m=monthPlanDate.getMonth(),days=new Date(y,m+1,0).getDate();
+ document.getElementById('monthPlanLabel').textContent=monthPlanDate.toLocaleDateString('id-ID',{month:'long',year:'numeric'}).toUpperCase();
+ const a=DATA.plan.filter(x=>boardOf(x)===boardType && (filter==='ALL'||String(x.group||'').trim().toUpperCase()===filter));
+ const monthStartDate=new Date(y,m,1,0,0,0,0), monthEndDate=new Date(y,m+1,1,0,0,0,0);
+ const jobs=[];
+ a.forEach(u=>(u.jobs||[]).forEach(j=>{
+   const st=parseDate(j.start),en=parseDate(j.end);
+   if(st&&en&&en>monthStartDate&&st<monthEndDate)jobs.push({u,j,st,en});
+ }));
+ const risk=new Set(a.filter(x=>x.atRisk).map(decisionKey));
+ const units=new Set(jobs.map(x=>decisionKey(x.u))).size;
+ const approved=jobs.filter(x=>processDecisions[decisionKey(x.u)+'|'+x.j.process]?.status==='APPROVED').length;
+ document.getElementById('monthPlanKpi').innerHTML=`<div class="k"><b>UNIT TERJADWAL</b><strong>${units}</strong></div><div class="k"><b>PLAN PROCESS</b><strong>${jobs.length}</strong></div><div class="k"><b>APPROVED NEXT PROCESS</b><strong>${approved}</strong></div><div class="k"><b>AT RISK</b><strong>${risk.size}</strong></div>`;
+ document.getElementById('monthPlanMeta').innerHTML=`<b>${fmtMonth(monthPlanDate)}</b> — ${a.length} unit | Board: <b>${boardType}</b> | Group: ${filter==='ALL'?'ALL':esc(filter)} | Menampilkan <b>PLAN JSCB BULANAN</b> untuk board <b>${boardType}</b>. Scroll horizontal untuk melihat seluruh tanggal.`;
+ const cols=[`<div class="monthCorner">NO POLISI</div>`];
+ for(let day=1;day<=days;day++){
+   const d=new Date(y,m,day),dow=d.getDay(),isToday=dayKey(d)===dayKey(new Date());
+   cols.push(`<div class="monthDay ${dow===0?'sun':''} ${isToday?'today':''}">${String(day).padStart(2,'0')}<small>${d.toLocaleDateString('id-ID',{weekday:'short'}).toUpperCase()}</small></div>`);
+ }
+ const unitRows=a.filter(u=>(u.jobs||[]).some(j=>{const st=parseDate(j.start),en=parseDate(j.end);return st&&en&&en>monthStartDate&&st<monthEndDate})).map(u=>{
+   let cells='';
+   for(let day=1;day<=days;day++){
+     const ds=new Date(y,m,day,8,0,0),de=new Date(y,m,day,16,30,0);
+     const cellJobs=(u.jobs||[]).filter(j=>{const st=parseDate(j.start),en=parseDate(j.end);return st&&en&&en>ds&&st<de});
+     let bars=cellJobs.map(j=>{
+       const st=parseDate(j.start),en=parseDate(j.end);
+       if(!st||!en)return '';
+       const vs=st>ds?st:ds,ve=en<de?en:de;
+       const left=monthPlanTimePct(vs),right=monthPlanTimePct(ve);
+       if(right<=left)return '';
+       const status=processDecisions[decisionKey(u)+'|'+j.process]?.status;
+       const cls=u.atRisk?'risk':monthPlanClass(j.process);
+       const label=status==='APPROVED'?' ✓':status==='CHANGED'?' ✎':'';
+       return `<div class="mbar ${cls}" style="left:${left}%;width:${Math.max(3,right-left)}%" title="${esc(u.nopol)} | ${esc(j.process)} | ${dt(j.start)} → ${dt(j.end)} | Janji ${dt(u.janjiSelesai)}">${esc(u.nopol)} · ${esc(j.process)}${label}</div>`;
+     }).join('');
+     cells+=`<div class="monthCell ${new Date(y,m,day).getDay()===0?'breakShade':''}">${bars}</div>`;
+   }
+   return `<div class="monthUnit"><b>${esc(u.nopol||'-')}</b><small>${esc(u.nopkb||'-')}</small></div>`+cells;
+ }).join('');
+ root.innerHTML=`<div class="monthGrid" style="--days:${days}">${cols.join('')}${unitRows}</div>`;
+ root.dataset.hasRendered='1';
+}
+
+
+
+
+load();
+setInterval(load,60000);
+</script>
+</body></html>
