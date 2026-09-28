@@ -676,7 +676,7 @@ window.REDOMonitor=(function(){
       footer();
 
       doc.save('REDO_MONITORING_FULL_'+mode+'_'+year+'_'+String(month.getMonth()+1).padStart(2,'0')+'.pdf');
-    }catch(err){alert('Gagal membuat PDF: '+err.message);console.error(err)}
+    }catch(err){console.error('Gagal membuat PDF:',err);throw err}
   }
   function setMode(m){mode=m==='YTD'?'YTD':'MTD';render()}
   function setMonth(v){var i=Math.max(0,Math.min(11,parseInt(v,10)||0));month=new Date(year,i,1);render()}
@@ -684,3 +684,4 @@ window.REDOMonitor=(function(){
   function init(){initMonthSelect();load(false)}
   return {init:init,load:load,setMode:setMode,setMonth:setMonth,setGroup:setGroup,downloadPDF:downloadPDF};
 })();
+

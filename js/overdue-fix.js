@@ -77,9 +77,12 @@
     const c1=document.getElementById('overdueAtu1'); if(c1)c1.textContent=a1.length;
     const c2=document.getElementById('overdueAtu2'); if(c2)c2.textContent=a2.length;
     const h1=document.getElementById('overdueAtu1Count'); if(h1)h1.textContent=a1.length+' UNIT';
-    const h2=document.getElementById('overdueAtu2Count'); if(h2)h2.textContent=(a2.length+other.length)+' UNIT';
+    const h2=document.getElementById('overdueAtu2Count'); if(h2)h2.textContent=a2.length+' UNIT';
     renderTable('overdueAtu1Body',a1);
-    renderTable('overdueAtu2Body',a2.concat(other));
+    renderTable('overdueAtu2Body',a2);
+     renderTable('overdueOtherBody',other);
+     const otherGroup=document.getElementById('overdueOtherGroup');if(otherGroup)otherGroup.hidden=!other.length;
+     const otherCount=document.getElementById('overdueOtherCount');if(otherCount)otherCount.textContent=other.length+' UNIT';
     const status=document.getElementById('overdueDataSource'); if(status) status.textContent='Sumber: DATABASE UNIT • JANJI SELESAI < hari ini • WIP aktif';
   }
   async function load(){
@@ -106,3 +109,4 @@
     setInterval(load,15000);
   });
 })();
+

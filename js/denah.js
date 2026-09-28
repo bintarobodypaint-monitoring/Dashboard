@@ -69,8 +69,7 @@ function render(){
  clearCars();
  const stage=document.getElementById('denahStage'); if(!stage)return;
  const units=getUnits();
- const counts={};
- units.forEach(function(u){counts[u.stage]=(counts[u.stage]||0)+1});
+ let visibleCars=0;
  const grouped={}; units.forEach(u=>(grouped[u.stage]||(grouped[u.stage]=[])).push(u));
  Object.keys(grouped).forEach(function(stageName){
    const pos=slots[stageName]||[];
@@ -81,10 +80,11 @@ function render(){
      el.title=(u.nopol||u.pkb)+' • '+u.progress;
      el.addEventListener('click',function(){if(typeof window.openJpcbUnitDetail==='function')window.openJpcbUnitDetail({nopol:u.nopol,noPKB:u.pkb,group:u.group,type:u.type,sa:u.sa,progress:u.progress});});
      stage.appendChild(el);
+      visibleCars++;
    });
  });
  const total=document.getElementById('denahWip'); if(total)total.textContent=units.length;
- const occ=document.getElementById('denahOccupied'); if(occ)occ.textContent=Object.values(counts).reduce((a,b)=>a+b,0);
+ const occ=document.getElementById('denahOccupied'); if(occ)occ.textContent=visibleCars;
  const st=document.getElementById('denahStatus'); if(st)st.textContent='● LIVE • '+new Date().toLocaleTimeString('id-ID');
 }
 async function load(){
@@ -101,3 +101,4 @@ window.addEventListener('DOMContentLoaded',function(){
  load(); setInterval(load,15000); setZoom(1);
 });
 })();
+
