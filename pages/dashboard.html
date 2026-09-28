@@ -104,20 +104,20 @@ if(window.DMSAuth && !DMSAuth.requireLogin()) {}
    - Tampilkan snapshot terakhir segera saat halaman dibuka.
    - API tetap diambil di background.
    - Tidak mengubah API/renderer dashboard.js.
-   - Hanya action=dashboard yang diperlakukan khusus.
+   - Hanya action=unit yang diperlakukan khusus.
    ========================================================= */
 (function(){
   'use strict';
 
   const CACHE_KEY = 'DMS_DASHBOARD_LAST_SUCCESS_V1';
-  const RELOAD_KEY = 'DMS_DASHBOARD_BG_REFRESH_V1';
+  const RELOAD_KEY = 'DMS_DASHBOARD_BG_REFRESH_AT_V2';
 
   function isDashboardRequest(input){
     try{
       const url = typeof input === 'string'
         ? input
         : (input && input.url ? input.url : '');
-      return /[?&]action=dashboard(?:&|$)/i.test(url);
+      return /[?&]action=unit(?:&|$)/i.test(url);
     }catch(e){
       return false;
     }
@@ -193,17 +193,16 @@ if(window.DMSAuth && !DMSAuth.requireLogin()) {}
          * the newest API response. Session flag prevents a reload loop.
          */
         try{
-          if(sessionStorage.getItem(RELOAD_KEY) !== '1'){
-            sessionStorage.setItem(RELOAD_KEY, '1');
+          const last = Number(sessionStorage.getItem(RELOAD_KEY) || 0);
+          if(Date.now() - last > 30000){
+            sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
             window.location.reload();
-          }else{
-            sessionStorage.removeItem(RELOAD_KEY);
           }
         }catch(e){}
       })
       .catch(function(err){
         console.warn('Dashboard background refresh:', err);
-        try{ sessionStorage.removeItem(RELOAD_KEY); }catch(e){}
+        
       });
     }
 
@@ -226,3 +225,4 @@ if(window.DMSAuth && !DMSAuth.requireLogin()) {}
 <script src="../js/dashboard.js?v=20260924-fast-cache1"></script>
 </body>
 </html>
+
