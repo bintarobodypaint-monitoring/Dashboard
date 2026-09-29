@@ -1082,21 +1082,40 @@ function callbackLoad(res){
  setApiStatus('✓ API TERHUBUNG — '+rows.length+' UNIT | '+cacheState+' | PLAN DIHITUNG ULANG','statusLive');
  renderMonthPlan();
 }
-function jsonpDirect(action, ok, fail, timeoutMs=10000, forceRefresh=false){
- const cb='JSCB_API_'+String(action).replace(/[^A-Za-z0-9_$]/g,'_')+'_'+Date.now();
+function jsonpDirect(action, ok, fail, timeoutMs=30000, forceRefresh=false){
+ const cb='JSCB_API_'+String(action).replace(/[^A-Za-z0-9_$]/g,'_')+'_'+Date.now()+'_'+Math.random().toString(36).slice(2);
  let done=false;
+ let timer;
  const script=document.createElement('script');
  script.async=true;
  script.id=cb;
- const cleanup=()=>{try{delete window[cb]}catch(e){};if(script.parentNode)script.parentNode.removeChild(script)};
- const good=(res)=>{if(done)return;done=true;clearTimeout(timer);cleanup();try{ok(res)}catch(e){console.error('API callback error',e);if(fail)fail('ERROR CALLBACK: '+(e.message||e))}};
- const bad=(msg)=>{if(done)return;done=true;clearTimeout(timer);cleanup();if(fail)fail(msg)};
+ const cleanup=()=>{clearTimeout(timer);try{delete window[cb]}catch(e){};if(script.parentNode)script.parentNode.removeChild(script)};
+ const good=(res)=>{if(done)return;done=true;cleanup();try{ok(res)}catch(e){console.error('API callback error',e);if(fail)fail('ERROR CALLBACK: '+(e.message||e))}};
+ const bad=(msg)=>{if(done)return;done=true;cleanup();if(fail)fail(msg)};
  window[cb]=good;
- script.onerror=()=>bad('SCRIPT API GAGAL DIMUAT. Cek URL Web App / deployment / akses Anyone.');
+ script.onerror=()=>bad('Koneksi data JSCB terputus.');
  const base=String(API||'').replace(/\?$/,'');
  script.src=base+'?action='+encodeURIComponent(action)+'&callback='+encodeURIComponent(cb)+'&refresh='+(forceRefresh?'1':'0')+'&_='+Date.now();
+ timer=setTimeout(()=>bad('API JSCB belum merespons dalam '+Math.round(timeoutMs/1000)+' detik.'),timeoutMs);
  document.head.appendChild(script);
- const timer=setTimeout(()=>bad('TIMEOUT '+Math.round(timeoutMs/1000)+' DETIK — API tidak mengirim callback.'),timeoutMs);
+}
+function requestJscb(ok, fail, forceRefresh){
+ jsonpDirect('jscbFast',ok,async firstError=>{
+   setApiStatus('Koneksi pertama gagal — mencoba kembali mengambil data JSCB…','statusWarn');
+   const controller=new AbortController();
+   const timeout=setTimeout(()=>controller.abort(),30000);
+   let result;
+   try{
+     const base=String(API||'').replace(/\?$/,'');
+     const response=await fetch(base+'?action=jscbFast&refresh='+(forceRefresh?'1':'0')+'&_='+Date.now(),{cache:'no-store',signal:controller.signal});
+     if(!response.ok)throw new Error('HTTP '+response.status);
+     result=await response.json();
+   }catch(e){
+     fail(firstError+' Percobaan kedua gagal: '+(e.name==='AbortError'?'waktu tunggu habis':e.message||e));
+     return;
+   }finally{clearTimeout(timeout)}
+   ok(result);
+ },30000,forceRefresh);
 }
 const CACHE_KEY='JSCB_DATAJSCB_CACHE_V11';
 const CACHE_KEYS=['JSCB_DATAJSCB_CACHE_V11','JSCB_DATAJSCB_CACHE_V10'];
@@ -1201,9 +1220,11 @@ function load(forceRefresh=false){
  const fail=msg=>{
    apiLoading=false;
    setApiStatus(msg+' | '+(cacheInfo()||'tanpa cache'),'statusErr');
-   if(meta)meta.textContent=(cacheInfo()?cacheInfo()+' · ':'')+'DATA TERAKHIR TETAP DITAMPILKAN';
+   const hasData=!!(DATA&&Array.isArray(DATA.raw)&&DATA.raw.length);
+   if(meta)meta.textContent=hasData?(cacheInfo()?cacheInfo()+' · ':'')+'DATA TERAKHIR TETAP DITAMPILKAN':'BELUM ADA DATA YANG BERHASIL DIMUAT';
+   if(!hasData&&root)root.innerHTML='<div class="gLoading">Data JSCB belum dapat dimuat. Klik REFRESH DATABASE untuk mencoba kembali.</div>';
  };
- jsonpDirect('jscbFast',res=>handleResponse(res,0),fail,8000,forceRefresh);
+ requestJscb(res=>handleResponse(res,0),fail,forceRefresh);
 }
 
 function boardOf(x){
