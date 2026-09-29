@@ -25,14 +25,10 @@ const el={
 };
 
 function getApiCandidates(){
-  const list=[
-    window.DATABASE_API_URL,
-    localStorage.getItem('DATABASE_API_URL'),
-    window.DASHBOARD_API_URL,
-    localStorage.getItem('DASHBOARD_API_URL'),
-    PRIMARY_API_URL,
-    LEGACY_API_URL
-  ].map(v=>String(v||'').trim()).filter(Boolean);
+  let stored=[];
+  try{stored=[localStorage.getItem('DATABASE_API_URL'),localStorage.getItem('DASHBOARD_API_URL')]}catch(_){/* Storage may be disabled. */}
+  const list=[PRIMARY_API_URL,window.DATABASE_API_URL,window.DASHBOARD_API_URL,...stored,LEGACY_API_URL]
+    .map(v=>String(v||'').trim()).filter(Boolean);
   return [...new Set(list)];
 }
 function setStatus(msg,error){
@@ -140,49 +136,36 @@ function fetchJsonp(api){
     const cb='DMS_DATABASE_'+Date.now()+'_'+Math.random().toString(36).slice(2);
     const script=document.createElement('script');
     let done=false;
-    const cleanup=()=>{
-      try{delete window[cb]}catch(_){window[cb]=undefined}
-      if(script.parentNode)script.parentNode.removeChild(script);
-    };
-    const timer=setTimeout(()=>{
-      if(done)return;done=true;cleanup();reject(new Error('JSONP timeout'));
-    },25000);
-    window[cb]=data=>{
-      if(done)return;done=true;clearTimeout(timer);cleanup();resolve(data);
-    };
-    script.onerror=()=>{
-      if(done)return;done=true;clearTimeout(timer);cleanup();reject(new Error('JSONP gagal'));
-    };
-    script.async=true;
-    script.src=api+(api.includes('?')?'&':'?')+'action=unit&callback='+encodeURIComponent(cb)+'&_='+Date.now();
-    document.head.appendChild(script);
+    const cleanup=()=>{try{delete window[cb]}catch(_){window[cb]=undefined}script.remove()};
+    const fail=err=>{if(done)return;done=true;clearTimeout(timer);cleanup();reject(err)};
+    const timer=setTimeout(()=>fail(new Error('JSONP timeout setelah 70 detik')),70000);
+    window[cb]=data=>{if(done)return;done=true;clearTimeout(timer);cleanup();resolve(data)};
+    script.onerror=()=>fail(new Error('Script JSONP gagal dimuat'));
+    script.onload=()=>{if(!done)setTimeout(()=>fail(new Error('API tidak memanggil callback JSONP')),0)};
+    const url=new URL(api);
+    url.searchParams.set('action','unit');
+    url.searchParams.set('callback',cb);
+    url.searchParams.set('_',Date.now());
+    script.async=true;script.src=url.toString();document.head.appendChild(script);
   });
 }
 async function fetchOneApi(api){
-  let fetchError='';
-  try{
+  let data;
+  try{data=await fetchJsonp(api)}
+  catch(jsonpError){
+    if(/timeout/i.test(String(jsonpError&&jsonpError.message)))throw jsonpError;
     const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),25000);
+    const timer=setTimeout(()=>controller.abort(),30000);
     try{
-      const url=api+(api.includes('?')?'&':'?')+'action=unit&_='+Date.now();
-      const res=await fetch(url,{method:'GET',cache:'no-store',signal:controller.signal,redirect:'follow'});
+      const url=new URL(api);url.searchParams.set('action','unit');url.searchParams.set('_',Date.now());
+      const res=await fetch(url.toString(),{method:'GET',cache:'no-store',signal:controller.signal,redirect:'follow'});
       if(!res.ok)throw new Error('HTTP '+res.status);
-      const text=await res.text();
-      let data;
-      try{data=JSON.parse(text)}catch(_){throw new Error('Response bukan JSON')}
-      if(!data||data.success!==true)throw new Error((data&&(data.error||data.message))||'Response action=unit tidak valid');
-      return data;
-    }finally{clearTimeout(timer)}
-  }catch(err){
-    fetchError=(err&&err.name==='AbortError')?'fetch timeout':String(err&&err.message||err);
+      data=await res.json();
+    }catch(fetchError){throw new Error('JSONP: '+jsonpError.message+' | fetch: '+(fetchError.name==='AbortError'?'timeout':fetchError.message))}
+    finally{clearTimeout(timer)}
   }
-  try{
-    const data=await fetchJsonp(api);
-    if(!data||data.success!==true)throw new Error((data&&(data.error||data.message))||'Response JSONP action=unit tidak valid');
-    return data;
-  }catch(err){
-    throw new Error(fetchError+' | JSONP: '+String(err&&err.message||err));
-  }
+  if(!data||data.success!==true)throw new Error((data&&(data.error||data.message))||'Response action=unit tidak valid');
+  return data;
 }
 async function fetchUnits(){
   const candidates=getApiCandidates();
@@ -200,7 +183,7 @@ async function fetchUnits(){
     }
   }
   console.error('DATABASE API attempts:',errors);
-  throw new Error('Semua endpoint DATABASE UNIT gagal. Cek deployment/API action=unit.');
+  throw new Error('Semua endpoint action=unit gagal: '+errors.join(' | ').slice(0,350));
 }
 async function loadData(){
   el.refresh.disabled=true;el.apply.disabled=true;el.excel.disabled=true;
