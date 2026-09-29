@@ -374,7 +374,7 @@
     });
   }
 
-  function renderTrend(pr, month, year, lead) {
+  function renderTrend(pr, allUnits, month, year, completionMap) {
     const daysIn = new Date(year, month + 1, 0).getDate();
     const labels = Array.from({ length: daysIn }, (_, i) => String(i + 1).padStart(2, "0"));
     const cin = Array(daysIn).fill(0);
@@ -385,8 +385,16 @@
       if (d) cin[d.getDate() - 1]++;
     });
 
-    lead.rows.forEach(x => {
-      if (x.end.getMonth() === month && x.end.getFullYear() === year) cout[x.end.getDate() - 1]++;
+    // Unit Out mengikuti bulan tanggal selesai, termasuk unit masuk bulan sebelumnya.
+    allUnits.forEach(u => {
+      const end = parseDate(getField(u, [
+        "TANGGAL SELESAI", "TGL SELESAI", "TANGGAL SELESAI ACTUAL", "TGL SELESAI ACTUAL",
+        "ACTUAL OUT", "TANGGAL UNIT OUT", "TGL UNIT OUT", "TANGGAL DELIVERY", "TGL DELIVERY"
+      ])) || completionMap[norm(getField(u, ["NO PKB", "NOPKB"]))]
+         || completionMap[norm(getField(u, ["NO POLISI", "NOPOLISI"]))];
+      if (end && end.getMonth() === month && end.getFullYear() === year) {
+        cout[end.getDate() - 1]++;
+      }
     });
 
     chart("trend", "trendChart", "line", {
@@ -547,7 +555,7 @@
 
       // Render dashboard UTAMA segera setelah data utama siap.
       renderKpi(lead, pr, services, [], latestInap);
-      renderTrend(pr, month - 1, year, lead);
+      renderTrend(pr, units, month - 1, year, completionMap);
       renderWip();
       renderProcess();
       renderLead(lead);
@@ -590,3 +598,4 @@
 
   document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", init) : init();
 })();
+
