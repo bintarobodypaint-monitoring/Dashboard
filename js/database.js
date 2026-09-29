@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 
-const PRIMARY_API_URL='https://script.google.com/macros/s/AKfycbzKxJ52Re-WBdWkuEP_mziWSnDDqzQLSIp2oWAg7SGt24bvSemH-ABnkkDNQYpJEeI5/exec';
+const PRIMARY_API_URL='https://script.google.com/macros/s/AKfycbw5a2s4WxsPFTHfbXMI0DrZBiECdFcheOEbbwkFBY-9eypxT8ybe8lPMW--ALfDpcJY/exec';
 const LEGACY_API_URL='https://script.google.com/macros/s/AKfycbw4DNX95MfrMfq7Uisd2r1EQXhMQ3xIY9AE8SNv00TaT5LTIO_bQU8FpRDcz5-p9ao/exec';
 const EXCEL_PASSWORD='BintaroBP123';
 const PAGE_SIZE=100;
