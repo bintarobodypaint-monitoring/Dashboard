@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KPI SA — Performance</title>
+<script src="../js/auth.js?v=20260930-roles"></script>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:#f1f4f7;
+  color:#203140;
+  font:14px system-ui,sans-serif
+}
+header{
+  background:#233645;
+  color:#fff;
+  padding:18px 24px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center
+}
+header a{color:#fff}
+main{
+  max-width:1700px;
+  margin:24px auto;
+  padding:0 20px
+}
+h1{margin:0 0 6px}
+p{line-height:1.6}
+.panel{
+  background:#fff;
+  border:1px solid #d5dde3;
+  border-radius:12px;
+  padding:22px;
+  margin:16px 0
+}
+.controls{
+  display:flex;
+  gap:16px;
+  flex-wrap:wrap;
+  align-items:end
+}
+label{
+  display:grid;
+  gap:6px;
+  font-weight:600
+}
+select,button{
+  padding:10px;
+  border:1px solid #c9d4db;
+  border-radius:6px;
+  font:inherit
+}
+button{
+  background:#b21e2b;
+  color:#fff;
+  cursor:pointer
+}
+button:disabled{opacity:.6}
+.score{
+  font-size:36px;
+  font-weight:750;
+  color:#a61d2a
+}
+.scroll{
+  overflow:auto;
+  padding:0
+}
+
+/* TABEL: garis penuh + angka rata tengah */
+table{
+  border-collapse:collapse;
+  width:100%;
+  min-width:1500px;
+  white-space:nowrap;
+  font-size:13px
+}
+th,td{
+  padding:11px 9px;
+  border:1px solid #cbd5dc;
+  text-align:center;
+  vertical-align:middle
+}
+thead th{
+  background:#233645;
+  color:#fff;
+  font-weight:700;
+  position:sticky;
+  top:0;
+  z-index:3
+}
+th:first-child,
+td:first-child{
+  position:sticky;
+  left:0
+}
+thead th:first-child{
+  background:#233645;
+  z-index:5
+}
+td:first-child{
+  background:#f7f9fb;
+  z-index:2
+}
+.kpi-name{
+  text-align:left!important;
+  font-weight:700;
+  min-width:150px
+}
+tbody tr:nth-child(even) td:not(:first-child){
+  background:#fafcfd
+}
+tbody tr:hover td{
+  background:#f1f6f9
+}
+tbody tr:hover td:first-child{
+  background:#e9f0f4
+}
+.closing-row td{
+  font-weight:700;
+  background:#fff8e8!important
+}
+.closing-row td:first-child{
+  background:#fff2cf!important
+}
+.muted{color:#61717f}
+details{margin-top:18px}
+#status{white-space:pre-line}
+
+@media(max-width:800px){
+  main{padding:0 10px;margin:14px auto}
+  .panel{padding:14px}
+  th,td{padding:9px 7px;font-size:12px}
+}
+
+@media print{
+  header,.controls{display:none}
+  .scroll{overflow:visible}
+  table{font-size:8px;min-width:0}
+  td,th{padding:4px}
+  main{padding:0}
+  .panel{padding:8px}
+}
+
+/* ===== PERFORMANCE DETAIL MTD/YTD - tabel kedua ===== */
+.detail-section-title{
+  margin:28px 0 6px;
+  font-size:21px;
+  font-weight:800;
+}
+.detail-toolbar{
+  display:flex;
+  gap:12px;
+  align-items:end;
+  flex-wrap:wrap;
+}
+.detail-mode-switch{
+  display:flex;
+  gap:4px;
+  padding:4px;
+  background:#e4e9ed;
+  border-radius:9px;
+}
+.detail-mode-switch button{
+  background:transparent;
+  color:#203140;
+  border:0;
+  padding:8px 14px;
+  font-weight:700;
+}
+.detail-mode-switch button[aria-pressed="true"]{
+  background:#b21e2b;
+  color:#fff;
+}
+.detail-cards{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(150px,1fr));
+  gap:10px;
+  margin:14px 0;
+}
+.detail-card{
+  background:#fff;
+  border:1px solid #d5dde3;
+  border-top:3px solid #b21e2b;
+  border-radius:9px;
+  padding:14px;
+}
+.detail-card span{
+  display:block;
+  color:#667783;
+  font-size:12px;
+  font-weight:700;
+}
+.detail-card strong{
+  display:block;
+  margin-top:8px;
+  font-size:23px;
+}
+.detail-table-wrap{
+  overflow:auto;
+  border:1px solid #cbd5dc;
+  border-radius:10px;
+  background:#fff;
+  max-height:72vh;
+}
+.detail-table{
+  min-width:1500px;
+  border-collapse:collapse;
+}
+.detail-table th,
+.detail-table td{
+  border:1px solid #cbd5dc;
+  text-align:center;
+  vertical-align:middle;
+  padding:10px 9px;
+}
+.detail-table thead th{
+  background:#233645;
+  color:#fff;
+  position:sticky;
+  top:0;
+  z-index:3;
+}
+.detail-table tbody th,
+.detail-table thead th:first-child{
+  position:sticky;
+  left:0;
+}
+.detail-table tbody th{
+  background:#f7f9fb;
+  text-align:left;
+  font-weight:700;
+  z-index:2;
+  min-width:190px;
+}
+.detail-table thead th:first-child{
+  z-index:5;
+}
+.detail-table .detail-total{
+  background:#fff1f2;
+  font-weight:800;
+}
+.detail-closing-row th,
+.detail-closing-row td{
+  background:#fff8e8;
+  font-weight:800;
+}
+.detail-percent-row th,
+.detail-percent-row td{
+  color:#526773;
+}
+#detail-status,
+#detail-note,
+#detail-period{
+  font-size:12px;
+  color:#61717f;
+}
+#detail-period{
+  font-weight:800;
+  color:#203140;
+}
+@media(max-width:900px){
+  .detail-cards{grid-template-columns:repeat(2,1fr)}
+  .detail-card:last-child{grid-column:1/-1}
+}
+
+</style>
+</head>
+<body data-module="performance">
+
+<script>
+if(!DMSAuth.requireLogin()){
+  document.documentElement.style.display='none';
+}
+</script>
+
+<header>
+  <a href="../index.html">← KEMBALI</a>
+  <b>PERFORMANCE</b>
+  <button onclick="DMSAuth.logout();location.replace('../index.html?login=1')">
+    LOGOUT
+  </button>
+</header>
+
+<main>
+  <h1>KPI Service Advisor</h1>
+  <div class="muted">Tunas Toyota Bintaro · Body &amp; Paint</div>
+
+  <section class="panel controls">
+    <label>
+      Service Advisor
+      <select id="sa">
+        <option>DWI NANTO</option>
+        <option>IWAN ISKANDAR</option>
+        <option>HENDI</option>
+      </select>
+    </label>
+
+    <label>
+      Tahun
+      <select id="year">
+        <option>2026</option>
+      </select>
+    </label>
+
+    <label>
+      Penilaian
+      <select id="mode">
+        <option value="sheet">Sesuai Sheet</option>
+        <option value="period">Januari–bulan pilihan</option>
+      </select>
+    </label>
+
+    <label>
+      Bulan akhir
+      <select id="month"></select>
+    </label>
+
+    <button id="refresh">Perbarui data</button>
+  </section>
+
+  <section class="panel">
+    <div>Nilai akhir KPI</div>
+    <div class="score" id="score">—</div>
+    <p id="status" role="status">Menyiapkan koneksi...</p>
+    <div class="muted" id="period"></div>
+  </section>
+
+  <section class="panel scroll">
+    <table>
+      <thead id="head"></thead>
+      <tbody id="body"></tbody>
+    </table>
+  </section>
+
+
+  <!-- ======================================================
+       TABEL KEDUA: PERFORMANCE SA MTD / YTD
+       Tabel KPI di atas TETAP dipertahankan.
+       ====================================================== -->
+  <div class="detail-section-title">Performance SA MTD / YTD</div>
+  <div class="muted">
+    Detail UE, CPUS, Closing Rate, kontribusi Asuransi/Personal,
+    kategori kerusakan, revenue, dan productivity.
+  </div>
+
+  <section class="panel">
+    <div class="detail-toolbar">
+      <label>
+        Cabang
+        <select id="detail-branch">
+          <option value="105">Bintaro</option>
+        </select>
+      </label>
+
+      <label>
+        Service Advisor
+        <select id="detail-sa">
+          <option value="ALL">Semua SA</option>
+          <option value="DWI NANTO">DWI NANTO</option>
+          <option value="IWAN ISKANDAR">IWAN ISKANDAR</option>
+          <option value="HENDI">HENDI</option>
+        </select>
+      </label>
+
+      <label>
+        Tahun
+        <select id="detail-year">
+          <option>2026</option>
+        </select>
+      </label>
+
+      <label>
+        Bulan
+        <select id="detail-month"></select>
+      </label>
+
+      <div class="detail-mode-switch" aria-label="Periode detail">
+        <button type="button" data-detail-mode="MTD" aria-pressed="false">
+          MTD
+        </button>
+        <button type="button" data-detail-mode="YTD" aria-pressed="true">
+          YTD
+        </button>
+      </div>
+
+      <button id="detail-refresh" type="button">Perbarui detail</button>
+    </div>
+
+    <div class="detail-cards">
+      <div class="detail-card">
+        <span id="detail-label-0">% CPUS YTD</span>
+        <strong id="detail-value-0">—</strong>
+      </div>
+      <div class="detail-card">
+        <span id="detail-label-1">% UE YTD</span>
+        <strong id="detail-value-1">—</strong>
+      </div>
+      <div class="detail-card">
+        <span id="detail-label-2">% Unit Asuransi</span>
+        <strong id="detail-value-2">—</strong>
+      </div>
+      <div class="detail-card">
+        <span id="detail-label-3">% Unit Personal/Cash</span>
+        <strong id="detail-value-3">—</strong>
+      </div>
+      <div class="detail-card">
+        <span id="detail-label-4">Revenue/Unit</span>
+        <strong id="detail-value-4">—</strong>
+      </div>
+    </div>
+
+    <div id="detail-period">YTD 2026</div>
+    <div id="detail-status" role="status">Menyiapkan tabel detail...</div>
+
+    <div class="detail-table-wrap">
+      <table class="detail-table">
+        <thead id="detail-head"></thead>
+        <tbody id="detail-body"></tbody>
+      </table>
+    </div>
+
+    <p id="detail-note"></p>
+  </section>
+
+  <details class="panel">
+    <summary>Dasar perhitungan</summary>
+
+    <p>
+      Closing Rate = CPUS ÷ UE. Closing Rate hanya indikator informasi
+      sehingga tidak menambah atau mengurangi bobot nilai akhir KPI.
+    </p>
+
+    <p>
+      NPS dihitung per Service Advisor dari data survey pelanggan DATA CSL:
+      Promoter = nilai 9–10, Passive = 7–8, Detractor = 0–6.
+      NPS = % Promoter − % Detractor.
+    </p>
+
+    <p>
+      Bobot KPI tetap mengikuti sheet KPI SA. Revenue/Unit dihitung dari
+      Revenue ÷ CPUS. WIP &gt;60 hari mengikuti data WIP HO.
+    </p>
+  </details>
+</main>
+
+<script src="../js/kpi-sa-config.js"></script>
+<script src="../js/kpi-sa-calc.js"></script>
+<script src="../js/kpi-sa.js"></script>
+<script src="../js/kpi-sa-detail.js"></script>
+
+</body>
+</html>
