@@ -1,0 +1,757 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KPI SA — Performance</title>
+<script src="../js/auth.js?v=20260930-roles"></script>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:#f1f4f7;
+  color:#203140;
+  font:15px system-ui,sans-serif
+}
+header{
+  background:#233645;
+  color:#fff;
+  padding:18px 24px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center
+}
+header a{color:#fff}
+main{
+  max-width:1700px;
+  margin:24px auto;
+  padding:0 20px
+}
+h1{margin:0 0 6px}
+p{line-height:1.6}
+.panel{
+  background:#fff;
+  border:1px solid #d5dde3;
+  border-radius:12px;
+  padding:22px;
+  margin:16px 0
+}
+.controls{
+  display:flex;
+  gap:16px;
+  flex-wrap:wrap;
+  align-items:end
+}
+label{
+  display:grid;
+  gap:6px;
+  font-weight:600
+}
+select,button{
+  padding:10px;
+  border:1px solid #c9d4db;
+  border-radius:6px;
+  font:inherit
+}
+button{
+  background:#b21e2b;
+  color:#fff;
+  cursor:pointer
+}
+button:disabled{opacity:.6}
+.score{
+  font-size:36px;
+  font-weight:750;
+  color:#a61d2a
+}
+.scroll{
+  overflow:auto;
+  padding:0
+}
+
+/* TABEL: garis penuh + angka rata tengah */
+table{
+  border-collapse:collapse;
+  width:100%;
+  min-width:1500px;
+  white-space:nowrap;
+  font-size:14px
+}
+th,td{
+  padding:12px 10px;
+  border:1px solid #cbd5dc;
+  text-align:center;
+  vertical-align:middle
+}
+thead th{
+  background:#233645;
+  color:#fff;
+  font-weight:700;
+  position:sticky;
+  top:0;
+  z-index:3
+}
+th:first-child,
+td:first-child{
+  position:sticky;
+  left:0
+}
+thead th:first-child{
+  background:#233645;
+  z-index:5
+}
+td:first-child{
+  background:#f7f9fb;
+  z-index:2
+}
+.kpi-name{
+  text-align:left!important;
+  font-weight:700;
+  min-width:150px
+}
+tbody tr:nth-child(even) td:not(:first-child){
+  background:#fafcfd
+}
+tbody tr:hover td{
+  background:#f1f6f9
+}
+tbody tr:hover td:first-child{
+  background:#e9f0f4
+}
+.closing-row td{
+  font-weight:700;
+  background:#fff8e8!important
+}
+.closing-row td:first-child{
+  background:#fff2cf!important
+}
+.muted{color:#61717f}
+details{margin-top:18px}
+#status{white-space:pre-line}
+
+@media(max-width:800px){
+  main{padding:0 10px;margin:14px auto}
+  .panel{padding:14px}
+  th,td{padding:9px 7px;font-size:13px}
+}
+
+@media print{
+  header,.controls{display:none}
+  .scroll{overflow:visible}
+  table{font-size:9px;min-width:0}
+  td,th{padding:4px}
+  main{padding:0}
+  .panel{padding:8px}
+}
+
+/* ===== PERFORMANCE DETAIL MTD/YTD - tabel kedua ===== */
+.detail-section-title{
+  margin:28px 0 6px;
+  font-size:22px;
+  font-weight:800;
+}
+.detail-toolbar{
+  display:flex;
+  gap:12px;
+  align-items:end;
+  flex-wrap:wrap;
+}
+.detail-mode-switch{
+  display:flex;
+  gap:4px;
+  padding:4px;
+  background:#e4e9ed;
+  border-radius:9px;
+}
+.detail-mode-switch button{
+  background:transparent;
+  color:#203140;
+  border:0;
+  padding:8px 14px;
+  font-weight:700;
+}
+.detail-mode-switch button[aria-pressed="true"]{
+  background:#b21e2b;
+  color:#fff;
+}
+.detail-cards{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(150px,1fr));
+  gap:10px;
+  margin:14px 0;
+}
+.detail-card{
+  background:#fff;
+  border:1px solid #d5dde3;
+  border-top:3px solid #b21e2b;
+  border-radius:9px;
+  padding:14px;
+}
+.detail-card span{
+  display:block;
+  color:#667783;
+  font-size:13px;
+  font-weight:700;
+}
+.detail-card strong{
+  display:block;
+  margin-top:8px;
+  font-size:24px;
+}
+.detail-table-wrap{
+  overflow:auto;
+  border:1px solid #cbd5dc;
+  border-radius:10px;
+  background:#fff;
+  max-height:72vh;
+}
+.detail-table{
+  min-width:1500px;
+  border-collapse:collapse;
+}
+.detail-table th,
+.detail-table td{
+  border:1px solid #cbd5dc;
+  text-align:center;
+  vertical-align:middle;
+  padding:11px 10px;
+}
+.detail-table thead th{
+  background:#233645;
+  color:#fff;
+  position:sticky;
+  top:0;
+  z-index:3;
+}
+.detail-table tbody th,
+.detail-table thead th:first-child{
+  position:sticky;
+  left:0;
+}
+.detail-table tbody th{
+  background:#f7f9fb;
+  text-align:left;
+  font-weight:700;
+  z-index:2;
+  min-width:190px;
+}
+.detail-table thead th:first-child{
+  z-index:5;
+}
+.detail-table .detail-total{
+  background:#fff1f2;
+  font-weight:800;
+}
+.detail-closing-row th,
+.detail-closing-row td{
+  background:#fff8e8;
+  font-weight:800;
+}
+.detail-percent-row th,
+.detail-percent-row td{
+  color:#526773;
+}
+#detail-status,
+#detail-note,
+#detail-period{
+  font-size:13px;
+  color:#61717f;
+}
+#detail-period{
+  font-weight:800;
+  color:#203140;
+}
+@media(max-width:900px){
+  .detail-cards{grid-template-columns:repeat(2,1fr)}
+  .detail-card:last-child{grid-column:1/-1}
+}
+
+
+/* ===== DOWNLOAD PDF / PRINT A4 LANDSCAPE - READABLE ===== */
+.pdf-only{display:none}
+.pdf-download-btn{
+  background:#1f6f43;
+  border-color:#1f6f43;
+  font-weight:800;
+}
+.pdf-download-btn:hover{filter:brightness(.96)}
+
+@media print{
+  @page{
+    size:A4 landscape;
+    margin:3mm;
+  }
+
+  html,body{
+    background:#fff!important;
+    width:auto!important;
+    height:auto!important;
+    margin:0!important;
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+  }
+
+  /* YTD tidak lagi dikecilkan ke 70%. */
+  body.pdf-ytd main{
+    zoom:1!important;
+  }
+
+  /* MTD punya hingga 31 kolom, jadi tetap perlu sedikit dipadatkan. */
+  body.pdf-mtd main{
+    zoom:.72!important;
+  }
+
+  header,
+  .controls,
+  .detail-toolbar,
+  #status,
+  #period,
+  #detail-status,
+  #detail-note,
+  details,
+  .detail-section-title + .muted{
+    display:none!important;
+  }
+
+  .pdf-only{
+    display:block!important;
+  }
+
+  #pdf-report-header{
+    margin:0 0 1.5mm 0!important;
+    padding:0 0 1mm 0!important;
+    border-bottom:.35mm solid #233645;
+  }
+
+  .pdf-report-title{
+    font-size:12px!important;
+    font-weight:900!important;
+    line-height:1!important;
+    letter-spacing:.25px;
+  }
+
+  #pdf-report-meta{
+    margin-top:.6mm;
+    font-size:7px!important;
+    line-height:1!important;
+    font-weight:600;
+    color:#425462;
+  }
+
+  main{
+    max-width:none!important;
+    width:100%!important;
+    margin:0!important;
+    padding:0!important;
+  }
+
+  main > h1,
+  main > .muted{
+    display:none!important;
+  }
+
+  .panel{
+    margin:1mm 0!important;
+    padding:.7mm!important;
+    border:0!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+    break-inside:avoid!important;
+  }
+
+  .score{
+    font-size:14px!important;
+    line-height:1!important;
+    margin:0!important;
+  }
+
+  .scroll,
+  .detail-table-wrap{
+    overflow:visible!important;
+    max-height:none!important;
+    border:0!important;
+    border-radius:0!important;
+  }
+
+  table,
+  .detail-table{
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    table-layout:fixed!important;
+    border-collapse:collapse!important;
+    margin:0!important;
+  }
+
+  /* FONT PDF DIPERBESAR */
+  table{
+    font-size:7.6px!important;
+  }
+
+  .detail-table{
+    font-size:7.2px!important;
+  }
+
+  th,td,
+  .detail-table th,
+  .detail-table td{
+    position:static!important;
+    min-width:0!important;
+    padding:.42mm .12mm!important;
+    line-height:1!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:clip!important;
+    border:.18mm solid #8f9da7!important;
+    letter-spacing:-.08px!important;
+  }
+
+  thead th,
+  .detail-table thead th{
+    background:#233645!important;
+    color:#fff!important;
+    font-weight:800!important;
+  }
+
+  /* ===========================
+     TABEL KPI ATAS - 19 KOLOM
+     Kolom panjang dipersempit.
+     =========================== */
+  #head th:nth-child(1),
+  #body td:nth-child(1){
+    width:10%!important;
+    text-align:left!important;
+  }
+
+  #head th:nth-child(2),
+  #body td:nth-child(2){
+    width:4.5%!important;
+  }
+
+  #head th:nth-child(n+3):nth-child(-n+14),
+  #body td:nth-child(n+3):nth-child(-n+14){
+    width:4.15%!important;
+  }
+
+  #head th:nth-child(15),
+  #body td:nth-child(15){
+    width:5%!important;
+  }
+
+  #head th:nth-child(16),
+  #body td:nth-child(16){
+    width:6.2%!important;
+  }
+
+  #head th:nth-child(17),
+  #body td:nth-child(17){
+    width:4.7%!important;
+  }
+
+  #head th:nth-child(18),
+  #body td:nth-child(18){
+    width:5.8%!important;
+  }
+
+  #head th:nth-child(19),
+  #body td:nth-child(19){
+    width:5.2%!important;
+  }
+
+  .kpi-name{
+    min-width:0!important;
+    width:auto!important;
+    text-align:left!important;
+    font-weight:800!important;
+  }
+
+  /* ===========================
+     TABEL DETAIL YTD - 14 KOLOM
+     =========================== */
+  .detail-table thead th:first-child,
+  .detail-table tbody th{
+    width:12%!important;
+    min-width:0!important;
+    text-align:left!important;
+    font-weight:800!important;
+  }
+
+  .detail-table thead th:nth-child(n+2),
+  .detail-table tbody td{
+    width:6.75%!important;
+  }
+
+  .detail-table .detail-total{
+    font-weight:900!important;
+  }
+
+  .detail-section-title{
+    margin:1mm 0 .4mm!important;
+    font-size:8px!important;
+    line-height:1!important;
+  }
+
+  .detail-cards{
+    display:grid!important;
+    grid-template-columns:repeat(5,1fr)!important;
+    gap:.7mm!important;
+    margin:.7mm 0!important;
+  }
+
+  .detail-card{
+    padding:.65mm!important;
+    border-radius:0!important;
+    border-width:.18mm!important;
+    border-top-width:.65mm!important;
+  }
+
+  .detail-card span{
+    font-size:6.3px!important;
+    line-height:1!important;
+  }
+
+  .detail-card strong{
+    margin-top:.35mm!important;
+    font-size:9.2px!important;
+    line-height:1!important;
+  }
+
+  #detail-period{
+    font-size:6.5px!important;
+    line-height:1!important;
+    margin:.4mm 0!important;
+  }
+
+  /* MTD: 31 tanggal, tetap dibuat lebih rapat tetapi tidak sekecil versi lama */
+  body.pdf-mtd .detail-table{
+    font-size:5.15px!important;
+  }
+
+  body.pdf-mtd .detail-table th,
+  body.pdf-mtd .detail-table td{
+    padding:.32mm .06mm!important;
+    letter-spacing:-.15px!important;
+  }
+
+  body.pdf-mtd .detail-table thead th:first-child,
+  body.pdf-mtd .detail-table tbody th{
+    width:9%!important;
+  }
+
+  body.pdf-mtd .detail-table thead th:nth-child(n+2),
+  body.pdf-mtd .detail-table tbody td{
+    width:auto!important;
+  }
+
+  body.pdf-mtd .detail-card span{
+    font-size:5.6px!important;
+  }
+
+  body.pdf-mtd .detail-card strong{
+    font-size:8px!important;
+  }
+
+  tr,td,th{
+    break-inside:avoid!important;
+  }
+}
+
+</style>
+</head>
+<body data-module="performance">
+
+<script>
+if(!DMSAuth.requireLogin()){
+  document.documentElement.style.display='none';
+}
+</script>
+
+<header>
+  <a href="../index.html">← KEMBALI</a>
+  <b>PERFORMANCE</b>
+  <button onclick="DMSAuth.logout();location.replace('../index.html?login=1')">
+    LOGOUT
+  </button>
+</header>
+
+<main>
+  <div id="pdf-report-header" class="pdf-only">
+    <div class="pdf-report-title">PERFORMANCE SERVICE ADVISOR</div>
+    <div id="pdf-report-meta"></div>
+  </div>
+
+  <h1>KPI Service Advisor</h1>
+  <div class="muted">Tunas Toyota Bintaro · Body &amp; Paint</div>
+
+  <section class="panel controls">
+    <label>
+      Service Advisor
+      <select id="sa">
+        <option>DWI NANTO</option>
+        <option>IWAN ISKANDAR</option>
+        <option>HENDI</option>
+      </select>
+    </label>
+
+    <label>
+      Tahun
+      <select id="year">
+        <option>2026</option>
+      </select>
+    </label>
+
+    <label>
+      Penilaian
+      <select id="mode">
+        <option value="sheet">Sesuai Sheet</option>
+        <option value="period">Januari–bulan pilihan</option>
+      </select>
+    </label>
+
+    <label>
+      Bulan akhir
+      <select id="month"></select>
+    </label>
+
+    <button id="refresh">Perbarui data</button>
+    <button id="download-pdf" class="pdf-download-btn" type="button"
+      title="Cetak / simpan laporan sebagai PDF A4 landscape">
+      DOWNLOAD PDF
+    </button>
+  </section>
+
+  <section class="panel">
+    <div>Nilai akhir KPI</div>
+    <div class="score" id="score">—</div>
+    <p id="status" role="status">Menyiapkan koneksi...</p>
+    <div class="muted" id="period"></div>
+  </section>
+
+  <section class="panel scroll">
+    <table>
+      <thead id="head"></thead>
+      <tbody id="body"></tbody>
+    </table>
+  </section>
+
+
+  <!-- ======================================================
+       TABEL KEDUA: PERFORMANCE SA MTD / YTD
+       Tabel KPI di atas TETAP dipertahankan.
+       ====================================================== -->
+  <div class="detail-section-title">Performance SA MTD / YTD</div>
+  <div class="muted">
+    Detail UE, CPUS, Closing Rate, kontribusi Asuransi/Personal,
+    kategori kerusakan, revenue, dan productivity.
+  </div>
+
+  <section class="panel">
+    <div class="detail-toolbar">
+      <label>
+        Cabang
+        <select id="detail-branch">
+          <option value="105">Bintaro</option>
+        </select>
+      </label>
+
+      <label>
+        Service Advisor
+        <select id="detail-sa">
+          <option value="ALL">Semua SA</option>
+          <option value="DWI NANTO">DWI NANTO</option>
+          <option value="IWAN ISKANDAR">IWAN ISKANDAR</option>
+          <option value="HENDI">HENDI</option>
+        </select>
+      </label>
+
+      <label>
+        Tahun
+        <select id="detail-year">
+          <option>2026</option>
+        </select>
+      </label>
+
+      <label>
+        Bulan
+        <select id="detail-month"></select>
+      </label>
+
+      <div class="detail-mode-switch" aria-label="Periode detail">
+        <button type="button" data-detail-mode="MTD" aria-pressed="false">
+          MTD
+        </button>
+        <button type="button" data-detail-mode="YTD" aria-pressed="true">
+          YTD
+        </button>
+      </div>
+
+      <button id="detail-refresh" type="button">Perbarui detail</button>
+    </div>
+
+    <div class="detail-cards">
+      <div class="detail-card">
+        <span id="detail-label-0">% CPUS YTD</span>
+        <strong id="detail-value-0">—</strong>
+      </div>
+      <div class="detail-card">
+        <span id="detail-label-1">% UE YTD</span>
+        <strong id="detail-value-1">—</strong>
+      </div>
+      <div class="detail-card">
+        <span id="detail-label-2">% Unit Asuransi</span>
+        <strong id="detail-value-2">—</strong>
+      </div>
+      <div class="detail-card">
+        <span id="detail-label-3">% Unit Personal/Cash</span>
+        <strong id="detail-value-3">—</strong>
+      </div>
+      <div class="detail-card">
+        <span id="detail-label-4">Revenue/Unit</span>
+        <strong id="detail-value-4">—</strong>
+      </div>
+    </div>
+
+    <div id="detail-period">YTD 2026</div>
+    <div id="detail-status" role="status">Menyiapkan tabel detail...</div>
+
+    <div class="detail-table-wrap">
+      <table class="detail-table">
+        <thead id="detail-head"></thead>
+        <tbody id="detail-body"></tbody>
+      </table>
+    </div>
+
+    <p id="detail-note"></p>
+  </section>
+
+  <details class="panel">
+    <summary>Dasar perhitungan</summary>
+
+    <p>
+      Closing Rate = CPUS ÷ UE. Closing Rate hanya indikator informasi
+      sehingga tidak menambah atau mengurangi bobot nilai akhir KPI.
+    </p>
+
+    <p>
+      NPS dihitung per Service Advisor dari data survey pelanggan DATA CSL:
+      Promoter = nilai 9–10, Passive = 7–8, Detractor = 0–6.
+      NPS = % Promoter − % Detractor.
+    </p>
+
+    <p>
+      Bobot KPI tetap mengikuti sheet KPI SA. Revenue/Unit dihitung dari
+      Revenue ÷ CPUS. WIP &gt;60 hari mengikuti data WIP HO.
+    </p>
+  </details>
+</main>
+
+<script src="../js/kpi-sa-config.js"></script>
+<script src="../js/kpi-sa-calc.js"></script>
+<script src="../js/kpi-sa.js"></script>
+<script src="../js/kpi-sa-detail.js"></script>
+<script src="../js/kpi-sa-pdf.js"></script>
+
+<script src="../js/kpi-sa-composition.js?v=20261005-horizontal-targets-v3"></script>
+</body>
+</html>
+
