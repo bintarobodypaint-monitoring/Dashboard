@@ -49,7 +49,7 @@ window.REDOMonitor=(function(){
     return found;
   }
   function defect(x){return defectsOf(x)[0]||''}
-  function hasProcess(x,proc){return defectsOf(x).some(function(d){var p=typeOfDefect(d);return proc==='PAINTING'?p==='PAINTING'||p==='PREPARATION':p===proc})}
+  function hasProcess(x,proc){return (x._qcProcesses||[]).some(function(p){return p===proc})||defectsOf(x).some(function(d){var p=typeOfDefect(d);return proc==='PAINTING'?p==='PAINTING'||p==='PREPARATION':p===proc})}
   function typeOfDefect(d){
     if(PREP.indexOf(d)>=0)return 'PREPARATION';
     if(FI.indexOf(d)>=0)return 'FINAL INSPECTION';
@@ -399,42 +399,49 @@ window.REDOMonitor=(function(){
     script.src=base+(base.indexOf('?')>=0?'&':'?')+query+'&callback='+cb+'&_='+Date.now();script.async=true;document.head.appendChild(script);
   })}
   function dayKey(v){var d=date(v);return d?d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'):''}
-  function qcRows(rows){
-    var seen=new Set();return rows.map(function(x){
+  function qcRows(rows,source){
+    return rows.filter(function(x){return x.redo===true||key(x.redo)==='TRUE'}).map(function(x){
       var text=key(Array.isArray(x.defect)?x.defect.join(','):x.defect).replace(/SCRETCH|SCRATCH/g,'STRETCH');
       var ds=defectsOf(x);
       if(!ds.length&&text&&!/^(NO DE?FFECT|NO DEFECT|TIDAK ADA|NIHIL|NONE|-)$/.test(text)){
         ds=text.split(/[,;\n]+/).map(key).filter(Boolean);
-        ds.forEach(function(d){if(DEFECTS.indexOf(d)<0){DEFECTS.push(d);PAINT.push(d)}});
+        ds.forEach(function(d){if(DEFECTS.indexOf(d)<0){DEFECTS.push(d);(source==='QC PANEL REPAIR'?PREP:PAINT).push(d)}});
       }
-      return Object.assign({},x,{date:x.tanggalISO||x.tanggal,nopol:x.noPolisi,nopkb:x.noPKB,_defects:ds,_source:'QC PAINTING'});
-    }).filter(function(x){var k=dayKey(redoDate(x))+'|'+unitKey(x);if(!unitKey(x)||seen.has(k))return false;seen.add(k);return true});
+      return Object.assign({},x,{date:x.tanggalISO||x.tanggal,nopol:x.noPolisi,nopkb:x.noPKB,_defects:ds,_source:source,_qcProcesses:['PAINTING']});
+    }).filter(function(x){return unitKey(x)&&dayKey(redoDate(x))});
   }
   function rebuild(){
-    raw.painting=[];Object.keys(qcMonths).forEach(function(k){raw.painting=raw.painting.concat(qcMonths[k])});
+    var qc=[];Object.keys(qcMonths).forEach(function(k){qc=qc.concat(qcMonths[k])});
+    var qcUnits=new Map();qc.forEach(function(x){var k=dayKey(redoDate(x))+'|'+unitKey(x),old=qcUnits.get(k);if(!old)qcUnits.set(k,Object.assign({},x));else old.panel=Math.max(panelOf(old),panelOf(x))});
+    raw.painting=Array.from(qcUnits.values());
     var events=new Map();
-    sourceRedo.concat(raw.painting.filter(function(x){return defectsOf(x).length})).forEach(function(x){
-      var ds=defectsOf(x);if(!ds.length)return;
+    sourceRedo.concat(qc).forEach(function(x){
+      var ds=defectsOf(x);if(!ds.length&&!x._qcProcesses)return;
       var k=dayKey(redoDate(x))+'|'+unitKey(x),old=events.get(k);
-      if(!old){events.set(k,Object.assign({},x,{_defects:ds.slice()}));return}
+      if(!old){events.set(k,Object.assign({},x,{_defects:ds.slice(),_qcProcesses:(x._qcProcesses||[]).slice()}));return}
       ds.forEach(function(d){if(old._defects.indexOf(d)<0)old._defects.push(d)});
       old.panel=Math.max(panelOf(old),panelOf(x));
+      (x._qcProcesses||[]).forEach(function(p){if(old._qcProcesses.indexOf(p)<0)old._qcProcesses.push(p)});
     });raw.redo=Array.from(events.values());
   }
   function status(){
     var el=document.getElementById('redoSubtitle');if(!el)return;
-    el.textContent=loading?'Memuat REDO + QC PAINTING...':qcErrors.length?'QC PAINTING belum lengkap: '+qcErrors.join(', '):'REDO + QC PAINTING • Unit/Panel Painting dari QC • Defect Preparation + Painting digabung';
+    el.textContent=loading?'Memuat REDO + QC...':qcErrors.length?'Data QC REDO belum lengkap: '+qcErrors.join(', '):'QC PAINTING + QC PANEL REPAIR • hanya REDO TRUE • FALSE tetap di QC REPORT';
   }
   async function loadQC(force){
     var needed=mode==='YTD'?Array.from({length:month.getMonth()+1},function(_,i){return i+1}):[month.getMonth()+1];
     var errors=[];
     await Promise.all(needed.map(async function(m){var k=year+'-'+m;
       if(qcMonths[k]&&!force)return;
-      if(!qcPromises[k])qcPromises[k]=jsonp(QC_API_URL,{action:'qcReport',month:m,year:year}).then(function(j){var sec=j.sections&&j.sections.painting;
-        if(!sec||sec.found===false||!Array.isArray(sec.rows))throw new Error('Sheet QC PAINTING tidak tersedia');
-        qcMonths[k]=qcRows(sec.rows);
+      if(!qcPromises[k])qcPromises[k]=jsonp(QC_API_URL,{action:'qcReport',month:m,year:year}).then(function(j){
+        var rows=[];['painting','panelRepair'].forEach(function(name){
+          var sec=j.sections&&j.sections[name];
+          if(!sec||sec.found===false||!Array.isArray(sec.rows))throw new Error('Sheet QC tidak tersedia');
+          if(sec.redoSupported!==true)throw new Error('API QC belum membaca kolom REDO');
+          rows=rows.concat(qcRows(sec.rows,name==='painting'?'QC PAINTING':'QC PANEL REPAIR'));
+        });qcMonths[k]=rows;
       }).finally(function(){delete qcPromises[k]});
-      try{await qcPromises[k]}catch(e){errors.push(String(m)+'/'+year)}
+      try{await qcPromises[k]}catch(e){delete qcMonths[k];errors.push(String(m)+'/'+year+': '+e.message)}
     }));qcErrors=errors;rebuild();render();status();
   }
   async function load(force){
@@ -647,5 +654,6 @@ window.REDOMonitor=(function(){
   function init(){initMonthSelect();load(false)}
   return {init:init,load:load,setMode:setMode,setMonth:setMonth,setGroup:setGroup,downloadPDF:downloadPDF};
 })();
+
 
 
