@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LOG — DIGITAL MONITORING SYSTEM</title>
+<link rel="stylesheet" href="../css/portal.css">
+<script src="../js/auth.js?v=20260930-roles"></script>
+<style>
+body{margin:0;background:#f3f5f8;color:#172333;font-family:Arial,sans-serif}
+.log-main{max-width:1500px;margin:30px auto;padding:0 24px}.log-head{display:flex;justify-content:space-between;gap:20px;align-items:center;flex-wrap:wrap}
+h1{margin:0 0 8px;font-size:30px}.log-sub{color:#697587;font-size:14px}.log-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+input,button{font:inherit;padding:11px 14px;border:1px solid #d9dfe7;border-radius:8px;background:white}input{width:min(330px,65vw)}button{cursor:pointer}button:disabled{cursor:wait}
+.log-status{margin:20px 0;font-size:14px;color:#697587}.log-table-wrap{overflow:auto;background:white;border:1px solid #e0e5eb;border-radius:12px;max-height:65vh}
+table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}th{position:sticky;top:0;background:#152a45;color:white;text-align:left}td,th{padding:13px 16px;border-bottom:1px solid #e9edf2}td{max-width:500px;white-space:pre-wrap;overflow-wrap:anywhere}tbody tr:hover{background:#f5f8fc}
+.log-empty{text-align:center;padding:40px}.log-pager{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin:16px 0}.log-error{color:#b42318}
+</style></head>
+<body><script>if(!DMSAuth.requireLogin())document.documentElement.style.display='none';</script>
+<div class="module-shell-bar"><a class="module-back" href="../index.html">← KEMBALI KE DASHBOARD</a><div class="module-name">LOG</div><button class="module-logout" onclick="DMSAuth.logout();location.replace('../index.html')">LOGOUT</button></div>
+<main class="log-main"><div class="log-head"><div><h1>LOG</h1><div class="log-sub">Histori aktivitas • sumber: sheet LOG</div></div><div class="log-actions"><input id="logSearch" type="search" aria-label="Cari log" placeholder="Cari di semua kolom…"><button id="logRefresh">↻ REFRESH</button></div></div>
+<div id="logStatus" class="log-status" role="status">Memuat sheet LOG…</div>
+<div class="log-table-wrap"><table><thead id="logHead"></thead><tbody id="logBody"></tbody></table></div>
+<div class="log-pager"><button id="logPrev">← SEBELUMNYA</button><span id="logPage"></span><button id="logNext">BERIKUTNYA →</button></div>
+</main><script src="../js/log.js?v=20261010"></script></body></html>
