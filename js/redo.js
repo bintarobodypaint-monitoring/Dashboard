@@ -8,7 +8,7 @@ window.REDOMonitor=(function(){
   'use strict';
   var REDO_API_URL='https://script.google.com/macros/s/AKfycbzW_1V3ickfa1PVCEWtvem8PN8xTh9ho9nv-jKzogbIeL3n2slWwLzkjZuuPQgz2dII/exec';
   var now=new Date(), year=now.getFullYear(), month=new Date(year,now.getMonth(),1);
-  var mode='MTD', group='ALL', raw={redo:[],completed:[]}, loading=false;
+  var mode='MTD', group='ALL', raw={redo:[],completed:[],painting:[]}, loading=false;
   var DEFECTS=['STRETCH','ORANGE PEEL','RUNS/LELEH','FISH EYE','DUST/KOTOR','COLOR MISMATCH','SOLVENT POPING','PIN HOLE','MOTTLING','PANEL WAVE/GELOMBANG','DENT/PENYOK','PANEL GAP','BURAM','CAT TERKELUPAS','POOR GLOSS'];
   var PREP=['PIN HOLE','STRETCH','PANEL WAVE/GELOMBANG','DENT/PENYOK'];
   var FI=['PANEL GAP','BURAM','CAT TERKELUPAS','POOR GLOSS'];
@@ -23,6 +23,8 @@ window.REDOMonitor=(function(){
     if(v instanceof Date)return isNaN(v)?null:v;
     var t=String(v).trim(),m=t.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
     if(m)return new Date(+m[3],+m[2]-1,+m[1]);
+    m=t.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(m)return new Date(+m[1],+m[2]-1,+m[3]);
     var d=new Date(t);return isNaN(d)?null:d;
   }
   function monthEnd(d){return new Date(d.getFullYear(),d.getMonth()+1,0,23,59,59,999)}
@@ -33,14 +35,21 @@ window.REDOMonitor=(function(){
     if(mode==='MTD')return d.getMonth()===month.getMonth();
     return d<=monthEnd(month);
   }
-  function groupOf(x){return key(x&&(x.group||x.grup||x.ATU||x.GROUP||''))}
+  function groupOf(x){var g=key(x&&(x.group||x.grup||x.ATU||x.GROUP||''));return /^(ATU|ATU ?1)$/.test(g)?'ATU 1':/^(JMN|ATU ?2)$/.test(g)?'ATU 2':g}
   function groupMatch(x){if(group==='ALL')return true;var g=groupOf(x),w=key(group);return g===w||g===w.replace(' ','')}
-  function unitKey(x){return key(x&&(x.nopol||x['NO POLISI']||x.nopolisi||''))}
-  function defect(x){
-    var vals=[x&&x.defect,x&&x.alasan,x&&x.keterangan,x&&x.DEFECT,x&&x.ALASAN,x&&x.KETERANGAN,x&&x['NAMA DEFECT'],x&&x['JENIS DEFECT'],x&&x['JENIS REDO'],x&&x.jenis,x&&x.process,x&&x['PROSES REDO']];
-    for(var j=0;j<vals.length;j++){var r=key(vals[j]);if(r==='SCRETCH')r='STRETCH';if(!r)continue;for(var i=0;i<DEFECTS.length;i++)if(r===DEFECTS[i]||r.indexOf(DEFECTS[i])>=0)return DEFECTS[i]}
-    return '';
+  function unitKey(x){return key(x&&(x.nopkb||x.noPKB||x['NO PKB']||x.nopol||x.noPolisi||x['NO POLISI']||x.nopolisi||''))}
+  function defectsOf(x){
+    if(x&&Array.isArray(x._defects))return x._defects;
+    var vals=[x&&x.defect,x&&x.alasan,x&&x.DEFECT,x&&x['NAMA DEFECT'],x&&x['JENIS DEFECT'],x&&x.process,x&&x.jenis,x&&x['JENIS REDO'],x&&x['PROSES REDO']];
+    var found=[];
+    vals.forEach(function(v){var text=key(Array.isArray(v)?v.join(','):v).replace(/SCRETCH|SCRATCH/g,'STRETCH');
+      if(!text||/^(NO DE?FFECT|NO DEFECT|TIDAK ADA|NIHIL|NONE|-)$/.test(text))return;
+      DEFECTS.forEach(function(d){if(text.indexOf(d)>=0&&found.indexOf(d)<0)found.push(d)});
+    });
+    return found;
   }
+  function defect(x){return defectsOf(x)[0]||''}
+  function hasProcess(x,proc){return defectsOf(x).some(function(d){var p=typeOfDefect(d);return proc==='PAINTING'?p==='PAINTING'||p==='PREPARATION':p===proc})}
   function typeOfDefect(d){
     if(PREP.indexOf(d)>=0)return 'PREPARATION';
     if(FI.indexOf(d)>=0)return 'FINAL INSPECTION';
@@ -60,7 +69,7 @@ window.REDOMonitor=(function(){
     if(/^\d+[.,]\d+$/.test(s))s=s.replace(',','.');else s=s.replace(/[^0-9-]/g,'');
     var n=Number(s);return isFinite(n)?n:0;
   }
-  function redoDate(x){return x&&(x.date||x.tanggal||x.start||x['TANGGAL REDO']||x['TGL REDO']||x.timestamp)}
+  function redoDate(x){return x&&(x.date||x.tanggalISO||x.tanggal||x.start||x['TANGGAL REDO']||x['TGL REDO']||x.timestamp)}
   function completedDate(x){return x&&(x.completionDate||x.tanggal||x.delivery||x['TGL SELESAI']||x['TANGGAL SELESAI']||x['TGL DELIVERY']||x['TANGGAL DELIVERY']||x.date)}
   function uniqueUnits(arr){var set=new Set();(arr||[]).forEach(function(x){if(!groupMatch(x))return;var k=unitKey(x);if(k)set.add(k)});return set.size}
   function pct(a,b){a=num(a);b=num(b);return b?(a/b*100).toFixed(1)+'%':'0.0%'}
@@ -75,12 +84,13 @@ window.REDOMonitor=(function(){
   function filteredRedo(){return raw.redo.filter(function(x){return groupMatch(x)&&inPeriod(redoDate(x))})}
   function filteredCompleted(){return raw.completed.filter(function(x){return groupMatch(x)&&inPeriod(completedDate(x))})}
   function statsFor(redo,done){
-    var units=uniqueUnits(redo),doneUnits=uniqueUnits(done);
-    var panels=redo.reduce(function(s,x){var p=panelOf(x);return s+(p>0?p:1)},0);
-    var donePanels=done.reduce(function(s,x){return s+panelOf(x)},0);
-    return {units:units,panels:panels,doneUnits:doneUnits,donePanels:donePanels,totalDefect:redo.filter(function(x){return !!defect(x)}).length,
-      paint:redo.filter(function(x){return typeOfDefect(defect(x))==='PAINTING'}).length,
-      fi:redo.filter(function(x){return typeOfDefect(defect(x))==='FINAL INSPECTION'}).length};
+    var paintDone=raw.painting.filter(function(x){return groupMatch(x)&&inPeriod(redoDate(x))});
+    return {units:uniqueUnits(redo),panels:redo.reduce(function(s,x){return s+panelOf(x)},0),
+      doneUnits:uniqueUnits(done),donePanels:done.reduce(function(s,x){return s+panelOf(x)},0),
+      paintUnits:uniqueUnits(paintDone),paintPanels:paintDone.reduce(function(s,x){return s+panelOf(x)},0),
+      totalDefect:redo.reduce(function(s,x){return s+defectsOf(x).length},0),
+      paint:redo.reduce(function(s,x){return s+defectsOf(x).filter(function(d){return typeOfDefect(d)!=='FINAL INSPECTION'}).length},0),
+      fi:redo.reduce(function(s,x){return s+defectsOf(x).filter(function(d){return typeOfDefect(d)==='FINAL INSPECTION'}).length},0)};
   }
   function renderKpi(){
     var r=filteredRedo(),d=filteredCompleted(),z=statsFor(r,d),e;
@@ -101,10 +111,10 @@ window.REDOMonitor=(function(){
     e=document.getElementById('redoPeriod');if(e)e.textContent=periodLabel();
   }
 
-  function doneRowsForDate(dt,granularity){
-    var list=raw.completed.filter(function(x){
+  function doneRowsForDate(dt,granularity,process){
+    var list=(process==='PAINTING'?raw.painting:raw.completed).filter(function(x){
       if(!groupMatch(x))return false;
-      var d=date(completedDate(x));if(!d)return false;
+      var d=date(process==='PAINTING'?redoDate(x):completedDate(x));if(!d)return false;
       if(granularity==='day'){
         return d.getFullYear()===dt.getFullYear()&&d.getMonth()===dt.getMonth()&&d.getDate()===dt.getDate();
       }
@@ -123,16 +133,7 @@ window.REDOMonitor=(function(){
       if(!groupMatch(x))return false;
       var d=date(redoDate(x));
       if(!d)return false;
-      if(process){
-        var proc=processOf(x);
-        // REDO PAINTING mencakup defect PREPARATION + PAINTING.
-        // FINAL INSPECTION tetap dihitung terpisah.
-        if(process==='PAINTING'){
-          if(proc!=='PAINTING' && proc!=='PREPARATION')return false;
-        }else if(proc!==process){
-          return false;
-        }
-      }
+      if(process&&!hasProcess(x,process))return false;
       if(granularity==='day'){
         return d.getFullYear()===dt.getFullYear()&&d.getMonth()===dt.getMonth()&&d.getDate()===dt.getDate();
       }
@@ -141,7 +142,7 @@ window.REDOMonitor=(function(){
     var units=new Set(),panels=0;
     rr.forEach(function(x){
       var k=unitKey(x);if(k)units.add(k);
-      var p=panelOf(x);panels+=p>0?p:1;
+      var p=panelOf(x);panels+=p;
     });
     return {unit:units.size,panel:panels};
   }
@@ -151,7 +152,7 @@ window.REDOMonitor=(function(){
     for(var day=1;day<=31;day++){
       var valid=day<=days,dt=new Date(m.getFullYear(),m.getMonth(),day);
       var r=valid?redoRowsForDate(dt,'day',process):{unit:0,panel:0};
-      var d=valid?doneRowsForDate(dt,'day'):{unit:0,panel:0};
+      var d=valid?doneRowsForDate(dt,'day',process):{unit:0,panel:0};
       out.push({label:String(day).padStart(2,'0'),valid:valid,unitDone:d.unit,panelDone:d.panel,unitRedo:r.unit,panelRedo:r.panel});
     }
     return out;
@@ -162,7 +163,7 @@ window.REDOMonitor=(function(){
     for(var mi=0;mi<12;mi++){
       var m=new Date(year,mi,1),valid=mi<=month.getMonth();
       var r=valid?redoRowsForDate(m,'month',process):{unit:0,panel:0};
-      var d=valid?doneRowsForDate(m,'month'):{unit:0,panel:0};
+      var d=valid?doneRowsForDate(m,'month',process):{unit:0,panel:0};
       out.push({label:monthLabel(mi),valid:valid,unitDone:d.unit,panelDone:d.panel,unitRedo:r.unit,panelRedo:r.panel});
     }
     return out;
@@ -241,7 +242,7 @@ window.REDOMonitor=(function(){
 
   function defectMap(arr){
     var map={};DEFECTS.forEach(function(d){map[d]=0});
-    arr.forEach(function(x){var d=defect(x);if(d)map[d]++});
+    arr.forEach(function(x){defectsOf(x).forEach(function(d){map[d]=(map[d]||0)+1})});
     return map;
   }
   function renderPareto(){
@@ -253,7 +254,7 @@ window.REDOMonitor=(function(){
           var include=modeType==='PAINTING_PREP'
             ? (p==='PREPARATION'||p==='PAINTING')
             : p==='FINAL INSPECTION';
-          return include && defect(x)===d;
+          return (modeType==='PAINTING_PREP'?typeOfDefect(d)!=='FINAL INSPECTION':typeOfDefect(d)==='FINAL INSPECTION') && defectsOf(x).indexOf(d)>=0;
         }).length;
         return [d,n,i];
       }).sort(function(a,b){return (b[1]-a[1])||(a[2]-b[2])}).slice(0,10);
@@ -381,106 +382,70 @@ window.REDOMonitor=(function(){
   }
 
   function render(){
-    if(!raw.redo.length&&!loading)return;
     renderKpi();renderYtdMonthlyTrend();renderTables();renderPareto();renderProcessMatrix();
     var m1=document.getElementById('redoModeMTD'),m2=document.getElementById('redoModeYTD');
     if(m1)m1.classList.toggle('active',mode==='MTD');if(m2)m2.classList.toggle('active',mode==='YTD');
     var sel=document.getElementById('redoMonthSelect');if(sel)sel.value=String(month.getMonth());
   }
-  /*
-   * REDO API loader V7
-   * Uses stable, simple global callback names because Google Apps Script
-   * JSONP is more reliable with plain callback identifiers.
-   * JPCB API is NOT touched.
-   */
-  var redoJsonpSeq=0;
-  function jsonp(base,action,ok,fail){
-    redoJsonpSeq++;
-    var cb=action==='redo'?'redoApiCallback':'completedApiCallback';
-    var script=document.createElement('script'),finished=false;
-    var timer=setTimeout(function(){
-      finish(new Error('Timeout '+action));
-    },30000);
-
-    function cleanup(){
-      clearTimeout(timer);
-      script.onload=null;
-      script.onerror=null;
-      if(script.parentNode)script.parentNode.removeChild(script);
-    }
-    function finish(err,data){
-      if(finished)return;
-      finished=true;
-      cleanup();
-      if(err)fail(err);else ok(data);
-    }
-
-    window[cb]=function(data){
-      if(!data || data.success===false){
-        finish(new Error((data&&data.error)||('Response '+action+' tidak valid')));
-        return;
+  var QC_API_URL='https://script.google.com/macros/s/AKfycbxX3UnuRwNcYWpGhyWsz-WVopHttb3tM5Qe381lLSdPR7gkeHjKJrExFxmByYem1Toz/exec';
+  var sourceRedo=[],qcMonths={},qcPromises={},requestSeq=0,loadVersion=0,qcErrors=[];
+  function jsonp(base,params){return new Promise(function(resolve,reject){
+    var cb='redo_monitor_cb_'+Date.now()+'_'+(++requestSeq),script=document.createElement('script'),timer;
+    function finish(err,data){clearTimeout(timer);delete window[cb];script.remove();err?reject(err):resolve(data)}
+    window[cb]=function(data){if(!data||data.success===false)finish(new Error(data&&data.error||'Respons API tidak valid'));else finish(null,data)};
+    script.onerror=function(){finish(new Error('Gagal menghubungi API'))};
+    timer=setTimeout(function(){finish(new Error('Timeout API'))},30000);
+    var query=Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k])}).join('&');
+    script.src=base+(base.indexOf('?')>=0?'&':'?')+query+'&callback='+cb+'&_='+Date.now();script.async=true;document.head.appendChild(script);
+  })}
+  function dayKey(v){var d=date(v);return d?d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'):''}
+  function qcRows(rows){
+    var seen=new Set();return rows.map(function(x){
+      var text=key(Array.isArray(x.defect)?x.defect.join(','):x.defect).replace(/SCRETCH|SCRATCH/g,'STRETCH');
+      var ds=defectsOf(x);
+      if(!ds.length&&text&&!/^(NO DE?FFECT|NO DEFECT|TIDAK ADA|NIHIL|NONE|-)$/.test(text)){
+        ds=text.split(/[,;\n]+/).map(key).filter(Boolean);
+        ds.forEach(function(d){if(DEFECTS.indexOf(d)<0){DEFECTS.push(d);PAINT.push(d)}});
       }
-      finish(null,data);
-    };
-
-    script.onerror=function(){
-      finish(new Error('Script error '+action));
-    };
-    script.onload=function(){
-      /*
-       * A valid JSONP response calls window[cb]. If onload fires but the
-       * callback did not execute, wait briefly and then report a clear error.
-       */
-      setTimeout(function(){
-        if(!finished)finish(new Error('Callback '+action+' tidak dipanggil API'));
-      },1200);
-    };
-
-    var sep=base.indexOf('?')>=0?'&':'?';
-    script.src=base+sep+
-      'action='+encodeURIComponent(action)+
-      '&callback='+cb+
-      '&_='+Date.now()+'_'+redoJsonpSeq;
-    script.async=true;
-    document.head.appendChild(script);
+      return Object.assign({},x,{date:x.tanggalISO||x.tanggal,nopol:x.noPolisi,nopkb:x.noPKB,_defects:ds,_source:'QC PAINTING'});
+    }).filter(function(x){var k=dayKey(redoDate(x))+'|'+unitKey(x);if(!unitKey(x)||seen.has(k))return false;seen.add(k);return true});
   }
-
-  function load(force){
-    if(loading&&!force)return;
-    loading=true;
-    var p=document.getElementById('redoPaintingTableHost'),
-        f=document.getElementById('redoFiTableHost');
-    if(p)p.innerHTML='<div class="redo-loading">Memuat data REDO...</div>';
-    if(f)f.innerHTML='<div class="redo-loading">Memuat data REDO...</div>';
-
-    /*
-     * First load action=redo. This endpoint is the source for all defect,
-     * painting, FI, daily and Pareto calculations.
-     */
-    jsonp(REDO_API_URL,'redo',function(res){
-      raw.redo=Array.isArray(res.data)?res.data:[];
-      var apiStatus=document.getElementById('redoApiStatus');if(apiStatus)apiStatus.textContent='API REDO: '+raw.redo.length+' record';
-      loading=false;
-      render();
-
-      /*
-       * Completed data is supplementary. Failure here must NEVER erase
-       * or block the REDO dataset.
-       */
-      jsonp(REDO_API_URL,'completed',function(done){
-        raw.completed=Array.isArray(done.data)?done.data:[];
-        render();
-      },function(){
-        raw.completed=[];
-        render();
-      });
-    },function(err){
-      loading=false;
-      raw.redo=[];
-      var msg='Gagal membaca API REDO: '+err.message;var apiStatus=document.getElementById('redoApiStatus');if(apiStatus)apiStatus.textContent='API REDO ERROR';
-      if(p)p.innerHTML='<div class="redo-loading">'+esc(msg)+'</div>';
-      if(f)f.innerHTML='<div class="redo-loading">'+esc(msg)+'</div>';
-    });
+  function rebuild(){
+    raw.painting=[];Object.keys(qcMonths).forEach(function(k){raw.painting=raw.painting.concat(qcMonths[k])});
+    var events=new Map();
+    sourceRedo.concat(raw.painting.filter(function(x){return defectsOf(x).length})).forEach(function(x){
+      var ds=defectsOf(x);if(!ds.length)return;
+      var k=dayKey(redoDate(x))+'|'+unitKey(x),old=events.get(k);
+      if(!old){events.set(k,Object.assign({},x,{_defects:ds.slice()}));return}
+      ds.forEach(function(d){if(old._defects.indexOf(d)<0)old._defects.push(d)});
+      old.panel=Math.max(panelOf(old),panelOf(x));
+    });raw.redo=Array.from(events.values());
+  }
+  function status(){
+    var el=document.getElementById('redoSubtitle');if(!el)return;
+    el.textContent=loading?'Memuat REDO + QC PAINTING...':qcErrors.length?'QC PAINTING belum lengkap: '+qcErrors.join(', '):'REDO + QC PAINTING • Unit/Panel Painting dari QC • Defect Preparation + Painting digabung';
+  }
+  async function loadQC(force){
+    var needed=mode==='YTD'?Array.from({length:month.getMonth()+1},function(_,i){return i+1}):[month.getMonth()+1];
+    var errors=[];
+    await Promise.all(needed.map(async function(m){var k=year+'-'+m;
+      if(qcMonths[k]&&!force)return;
+      if(!qcPromises[k])qcPromises[k]=jsonp(QC_API_URL,{action:'qcReport',month:m,year:year}).then(function(j){var sec=j.sections&&j.sections.painting;
+        if(!sec||sec.found===false||!Array.isArray(sec.rows))throw new Error('Sheet QC PAINTING tidak tersedia');
+        qcMonths[k]=qcRows(sec.rows);
+      }).finally(function(){delete qcPromises[k]});
+      try{await qcPromises[k]}catch(e){errors.push(String(m)+'/'+year)}
+    }));qcErrors=errors;rebuild();render();status();
+  }
+  async function load(force){
+    if(loading)return;loading=true;var version=++loadVersion;status();
+    var results=await Promise.allSettled([jsonp(REDO_API_URL,{action:'redo'}),jsonp(REDO_API_URL,{action:'completed'}),loadQC(force)]);
+    if(version!==loadVersion)return;
+    if(results[0].status==='fulfilled')sourceRedo=Array.isArray(results[0].value.data)?results[0].value.data:[];
+    if(results[1].status==='fulfilled')raw.completed=Array.isArray(results[1].value.data)?results[1].value.data:[];
+    loading=false;rebuild();render();status();
+    if(results[0].status==='rejected'){var el=document.getElementById('redoSubtitle');if(el)el.textContent+=' • API REDO gagal; data QC yang tersedia tetap ditampilkan'}
+    if(results[1].status==='rejected'){var el=document.getElementById('redoSubtitle');if(el)el.textContent+=' • Unit selesai/FI gagal dimuat'}
   }
 
   var pdfLibrariesPromise=null;
@@ -514,6 +479,7 @@ window.REDOMonitor=(function(){
   async function downloadPDF(){
     // A3 readability: enlarged typography for A4 Fit printing.
     try{
+      await loadQC(false);
       await ensurePDFLibraries();
       var {jsPDF}=window.jspdf;
       var doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a3',compress:true});
@@ -550,7 +516,7 @@ window.REDOMonitor=(function(){
         doc.setFillColor.apply(doc,LIGHT);doc.setDrawColor(225,230,233);doc.roundedRect(M,y,W-2*M,6,1.5,1.5,'FD');
         txt(t,M+3,y+4.5,8,true,DARK);
       }
-      function metricRows(rows){
+      function metricRows(rows,proc){
         rows.forEach(function(x){
           x.unitPct=x.unitDone?(x.unitRedo/x.unitDone*100):0;
           x.panelPct=x.panelDone?(x.panelRedo/x.panelDone*100):0;
@@ -558,7 +524,7 @@ window.REDOMonitor=(function(){
         var valid=rows.filter(function(x){return x.valid}),sums={unitDone:0,panelDone:0,unitRedo:0,panelRedo:0};
         valid.forEach(function(x){Object.keys(sums).forEach(function(k){sums[k]+=Number(x[k])||0})});
         return [
-          ['UNIT PAINTING','unitDone',false],['PANEL PAINTING','panelDone',false],
+          [proc==='FINAL INSPECTION'?'UNIT FI':'UNIT PAINTING','unitDone',false],[proc==='FINAL INSPECTION'?'PANEL FI':'PANEL PAINTING','panelDone',false],
           ['UNIT REDO','unitRedo',false],['PANEL REDO','panelRedo',false],
           ['% UNIT REDO','unitPct',true],['% PANEL REDO','panelPct',true]
         ].map(function(mm){
@@ -569,7 +535,7 @@ window.REDOMonitor=(function(){
         });
       }
       function addTable(proc,rows,x,y,w){
-        var ms=metricRows(rows),head=['REKAP '+(proc==='PAINTING'?'REDO PAINTING — TARGET < 9%':'REDO FI — TARGET < 5%')];
+        var ms=metricRows(rows,proc),head=['REKAP '+(proc==='PAINTING'?'REDO PAINTING — TARGET < 9%':'REDO FI — TARGET < 5%')];
         rows.forEach(function(v){head.push(v.label)});head.push('JUMLAH');head.push('RATA-RATA');
         var body=ms.map(function(mm){
           var line=[mm.label];
@@ -602,10 +568,7 @@ window.REDOMonitor=(function(){
       function pData(modeType){
         var map={};
         DEFECTS.forEach(function(d){map[d]=0});
-        r.forEach(function(x){
-          var p=processOf(x),ok=modeType==='PAINTING_PREP'?(p==='PREPARATION'||p==='PAINTING'):(p==='FINAL INSPECTION');
-          if(!ok)return;var dd=defect(x);if(dd)map[dd]=(map[dd]||0)+1;
-        });
+        r.forEach(function(x){defectsOf(x).forEach(function(dd){var p=typeOfDefect(dd),ok=modeType==='PAINTING_PREP'?p!=='FINAL INSPECTION':p==='FINAL INSPECTION';if(ok)map[dd]=(map[dd]||0)+1})});
         return Object.keys(map).map(function(k,i){return[k,map[k],i]})
           .sort(function(a,b){return(b[1]-a[1])||(a[2]-b[2])}).slice(0,10);
       }
@@ -660,14 +623,14 @@ window.REDOMonitor=(function(){
       var procs=['PREPARATION','PAINTING','FINAL INSPECTION'],cw=(W-2*M)/3,py=39;
       procs.forEach(function(proc,i){
         var map={},total=0;
-        r.forEach(function(x){if(processOf(x)!==proc)return;var dd=defect(x);if(dd){map[dd]=(map[dd]||0)+1;total++}});
+        r.forEach(function(x){defectsOf(x).forEach(function(dd){if(typeOfDefect(dd)===proc){map[dd]=(map[dd]||0)+1;total++}})});
         var top=Object.keys(map).map(function(k){return[k,map[k]]}).sort(function(a,b){return b[1]-a[1]}).slice(0,3),x=M+i*cw;
         if(i>0){doc.setDrawColor.apply(doc,RED);doc.setLineWidth(.7);doc.line(x,py,x,py+120);}
         txt(proc,x+6,py+8,9,true,DARK);txt(String(total),x+6,py+22,19,true,RED);txt('TOTAL DEFECT',x+6,py+28,5,false,GREY);
         top.forEach(function(v,j){txt((j+1)+'. '+v[0],x+6,py+43+j*13,6.2,true,DARK);txt(String(v[1]),x+cw-38,py+43+j*13,6,true,RED,'right');txt(total?(v[1]/total*100).toFixed(1)+'%':'0.0%',x+cw-8,py+43+j*13,5.5,true,GREY,'right')});
       });
       title('REKAP SELURUH 15 MASTER DEFECT',166);
-      var all=DEFECTS.map(function(dd,i){var n=r.filter(function(x){return defect(x)===dd}).length;return[dd,n,i]})
+      var all=DEFECTS.map(function(dd,i){var n=r.filter(function(x){return defectsOf(x).indexOf(dd)>=0}).length;return[dd,n,i]})
         .sort(function(a,b){return(b[1]-a[1])||(a[2]-b[2])});
       doc.autoTable({
         startY:175,head:[['DEFECT','JUMLAH','% TOTAL','PROSES']],body:all.map(function(v){return[v[0],v[1],z.totalDefect?(v[1]/z.totalDefect*100).toFixed(1)+'%':'0.0%',typeOfDefect(v[0])]}),
@@ -678,10 +641,11 @@ window.REDOMonitor=(function(){
       doc.save('REDO_MONITORING_FULL_'+mode+'_'+year+'_'+String(month.getMonth()+1).padStart(2,'0')+'.pdf');
     }catch(err){console.error('Gagal membuat PDF:',err);throw err}
   }
-  function setMode(m){mode=m==='YTD'?'YTD':'MTD';render()}
-  function setMonth(v){var i=Math.max(0,Math.min(11,parseInt(v,10)||0));month=new Date(year,i,1);render()}
+  function setMode(m){mode=m==='YTD'?'YTD':'MTD';render();loadQC(false)}
+  function setMonth(v){var i=Math.max(0,Math.min(11,parseInt(v,10)||0));month=new Date(year,i,1);render();loadQC(false)}
   function setGroup(g){group=g;['All','1','2'].forEach(function(x){var b=document.getElementById('redoGroup'+x);if(b)b.classList.toggle('active',(x==='All'&&g==='ALL')||(x!=='All'&&g==='ATU '+x))});render()}
   function init(){initMonthSelect();load(false)}
   return {init:init,load:load,setMode:setMode,setMonth:setMonth,setGroup:setGroup,downloadPDF:downloadPDF};
 })();
+
 
